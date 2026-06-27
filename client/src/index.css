@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base dark theme ─────────────────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-gray-900 text-gray-100 font-sans;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* ── Scrollbar styling ───────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-gray-800;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-600 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+
+/* ── Leaflet overrides for dark theme ───────────────────────────────────── */
+.leaflet-container {
+  background: #1e293b !important;
+  font-family: inherit;
+}
+.leaflet-popup-content-wrapper {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155 !important;
+  border-radius: 8px !important;
+}
+.leaflet-popup-tip {
+  background: #1e293b !important;
+}
+.leaflet-control-zoom a {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+.leaflet-control-zoom a:hover {
+  background: #334155 !important;
+}
+.leaflet-control-attribution {
+  background: rgba(10, 15, 30, 0.8) !important;
+  color: #64748b !important;
+}
+
+/* ── Flash animation for new alerts ─────────────────────────────────────── */
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+.animate-flash {
+  animation: flash 0.5s ease-in-out 3;
+}
+
+/* ── Slide-in for toast notifications ───────────────────────────────────── */
+@keyframes slideInRight {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.animate-slide-in {
+  animation: slideInRight 0.35s ease-out;
+}
+
+/* ── Fade-in for chat messages ───────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+.animate-fade-in {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* ── Pulse-ring for recording indicator ─────────────────────────────────── */
+@keyframes pulseRing {
+  0%   { box-shadow: 0 0 0 0   rgba(239, 68, 68, 0.6); }
+  70%  { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);   }
+  100% { box-shadow: 0 0 0 0   rgba(239, 68, 68, 0);   }
+}
+.animate-pulse-ring {
+  animation: pulseRing 1.2s ease-out infinite;
+}
+
+/* ── vis-network dark canvas ─────────────────────────────────────────────── */
+.vis-network canvas {
+  background: #0f172a !important;
+}
+
+/* ── Kannada font ────────────────────────────────────────────────────────── */
+.font-kannada {
+  font-family: 'Noto Sans Kannada', sans-serif;
+}
