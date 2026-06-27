@@ -1,273 +1,367 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  BarChart, Bar,
-} from 'recharts';
+  BarChart, Bar, Cell,
+} from 'recharts'
 
-const CRIME_COLORS = {
-  Theft: '#6366f1',
-  Murder: '#ef4444',
-  Robbery: '#f97316',
-  Assault: '#f59e0b',
-  'Cyber Crime': '#8b5cf6',
-  'Drug Offence': '#10b981',
-};
-
+// ── Karnataka districts for selector ─────────────────────────────────────────
 const DISTRICTS = [
-  { id: 'BEU', name: 'Bengaluru Urban' },
-  { id: 'MYS', name: 'Mysuru' },
-  { id: 'MNG', name: 'Mangaluru' },
-  { id: 'HUB', name: 'Hubballi-Dharwad' },
-  { id: 'BLG', name: 'Belagavi' },
-  { id: 'KLB', name: 'Kalaburagi' },
-  { id: 'DWD', name: 'Davanagere' },
-  { id: 'SHV', name: 'Shivamogga' },
-  { id: 'TUM', name: 'Tumakuru' },
-  { id: 'BER', name: 'Bengaluru Rural' },
-];
+  'Bengaluru Urban','Mysuru','Belagavi','Kalaburagi','Mangaluru',
+  'Shivamogga','Ballari','Dharwad','Tumakuru','Raichur',
+  'Vijayapura','Hassan','Davanagere','Udupi','Bagalkote',
+]
 
-function RiskCalendar({ predictions, district }) {
-  const distPreds = predictions.filter(p => p.DistrictID === district);
-  const dates = [...new Set(distPreds.map(p => p.PredictionDate))].sort().slice(0, 7);
-  const crimeTypes = [...new Set(distPreds.map(p => p.CrimeType))];
+// ── Risk colour ────────────────────────────────────────────────────────────────
+function riskColor(score) {
+  if (score >= 0.7) return '#ef4444'
+  if (score >= 0.4) return '#f97316'
+  if (score >= 0.2) return '#eab308'
+  return '#22c55e'
+}
 
-  if (dates.length === 0) {
-    return <div className="text-gray-500 text-sm text-center py-4">No prediction data</div>;
-  }
+// ── Dark tooltip ───────────────────────────────────────────────────────────────
+function DarkTooltip({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null
+  return (
+    <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs shadow-lg max-w-xs">
+      <p className="font-semibold text-white mb-1">{label}</p>
+      {payload.map((p, i) => (
+        <p key={i} style={{ color: p.color }}>{p.name}: {typeof p.value === 'number' ? p.value.toFixed(1) : p.value}</p>
+      ))}
+    </div>
+  )
+}
 
-  const maxScore = Math.max(...distPreds.map(p => p.RiskScore || 0), 0.01);
+// ── Line chart — 7-day forecast ────────────────────────────────────────────────
+function ForecastLineChart({ data, district }) {
+  // data: array of { date, predicted_count, crime_type? }
+  // Group by date
+  const byDate = {}
+  data.forEach(d => {
+    const date = d.date || d.prediction_date || '—'
+    if (!byDate[date]) byDate[date] = { date, total: 0 }
+    byDate[date].total += d.predicted_count || 0
+    if (d.crime_type) byDate[date][d.crime_type] = (byDate[date][d.crime_type] || 0) + (d.predicted_count || 0)
+  })
+
+  const chartData = Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date))
+
+  // Get unique crime types
+  const crimeTypes = [...new Set(data.map(d => d.crime_type).filter(Boolean))].slice(0, 5)
+  const LINE_COLORS = ['#6366f1','#ef4444','#f97316','#22c55e','#06b6d4']
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs border-collapse">
+    <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+      <h3 className="text-sm font-semibold text-white mb-3">
+        {district} — 7-Day Crime Forecast
+      </h3>
+      <ResponsiveContainer width="100%" height={220}>
+        <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+          <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 9 }} />
+          <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} />
+          <Tooltip content={<DarkTooltip />} />
+          <Legend wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }} />
+          {crimeTypes.length > 0 ? (
+            crimeTypes.map((ct, i) => (
+              <Line key={ct} type="monotone" dataKey={ct} name={ct}
+                stroke={LINE_COLORS[i % LINE_COLORS.length]} strokeWidth={2} dot={false} />
+            ))
+          ) : (
+            <Line type="monotone" dataKey="total" name="Total Predicted"
+              stroke="#6366f1" strokeWidth={2.5} dot={{ fill: '#6366f1', r: 4 }} />
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+// ── SHAP factors bar chart ────────────────────────────────────────────────────
+function SHAPChart({ factors }) {
+  if (!factors || factors.length === 0) return null
+  const data = factors.map(f => ({
+    feature: f.feature_name || f.feature,
+    value:   Math.abs(f.shap_value || f.importance || 0),
+    raw:     f.shap_value || f.importance || 0,
+  })).sort((a, b) => b.value - a.value).slice(0, 8)
+
+  return (
+    <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+      <h3 className="text-sm font-semibold text-white mb-3">{`Contributing Factors (SHAP)`}</h3>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, bottom: 4, left: 80 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={false} />
+          <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 9 }} />
+          <YAxis type="category" dataKey="feature" tick={{ fill: '#94a3b8', fontSize: 9 }} width={75} />
+          <Tooltip content={<DarkTooltip />} />
+          <Bar dataKey="value" name="SHAP" radius={[0, 4, 4, 0]}>
+            {data.map((entry, i) => (
+              <Cell key={i} fill={entry.raw >= 0 ? '#ef4444' : '#22c55e'} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <p className="text-[10px] text-gray-500 mt-2">Red = increases risk · Green = decreases risk</p>
+    </div>
+  )
+}
+
+// ── Risk calendar (7 days × districts heatmap) ────────────────────────────────
+function RiskCalendar({ predictions, t }) {
+  // Build a date × district matrix
+  const dates     = [...new Set(predictions.map(p => p.date || p.prediction_date).filter(Boolean))].sort().slice(0, 7)
+  const districts = [...new Set(predictions.map(p => p.district || p.DistrictName).filter(Boolean))].slice(0, 10)
+
+  if (dates.length === 0 || districts.length === 0) return null
+
+  const lookup = {}
+  predictions.forEach(p => {
+    const key = `${p.district || p.DistrictName}__${p.date || p.prediction_date}`
+    lookup[key] = Math.max(lookup[key] || 0, p.risk_score || 0)
+  })
+
+  return (
+    <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 overflow-x-auto">
+      <h3 className="text-sm font-semibold text-white mb-3">{t('calendarRisk')}</h3>
+      <table className="text-[10px] border-collapse">
         <thead>
           <tr>
-            <th className="text-left text-gray-400 font-normal py-1 pr-3">Crime Type</th>
+            <th className="pr-3 py-1 text-left text-gray-500 font-semibold min-w-[110px]">District</th>
             {dates.map(d => (
-              <th key={d} className="text-center text-gray-400 font-normal py-1 px-1 min-w-16">
-                {new Date(d).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+              <th key={d} className="px-2 py-1 text-center text-gray-500 font-semibold whitespace-nowrap">
+                {formatDate(d)}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {crimeTypes.map(ct => (
-            <tr key={ct}>
-              <td className="py-1 pr-3 text-gray-300 whitespace-nowrap">{ct}</td>
-              {dates.map(d => {
-                const pred = distPreds.find(p => p.PredictionDate === d && p.CrimeType === ct);
-                const score = pred?.RiskScore || 0;
-                const intensity = score / maxScore;
-                const bg = score >= 0.7 ? `rgba(239,68,68,${0.3 + intensity * 0.7})` :
-                           score >= 0.4 ? `rgba(249,115,22,${0.3 + intensity * 0.7})` :
-                           `rgba(34,197,94,${0.2 + intensity * 0.5})`;
+          {districts.map(dist => (
+            <tr key={dist}>
+              <td className="pr-3 py-1 text-gray-300 font-medium truncate max-w-[110px]">{dist}</td>
+              {dates.map(date => {
+                const score = lookup[`${dist}__${date}`] || 0
+                const bg    = score >= 0.7 ? 'bg-red-700'
+                            : score >= 0.4 ? 'bg-orange-600'
+                            : score >= 0.2 ? 'bg-yellow-600'
+                            :                'bg-green-800'
                 return (
-                  <td key={d} className="py-1 px-1">
-                    <div
-                      className="h-8 rounded flex items-center justify-center text-white font-bold"
-                      style={{ backgroundColor: bg }}
-                      title={`${ct} on ${d}: ${pred?.PredictedCount || 0} predicted, risk ${Math.round(score * 100)}%`}
-                    >
-                      {pred?.PredictedCount || 0}
+                  <td key={date} className="px-2 py-1 text-center">
+                    <div className={`${bg} rounded px-2 py-1 font-mono text-white`} title={`${dist} ${date}: ${(score * 100).toFixed(0)}%`}>
+                      {score > 0 ? (score * 100).toFixed(0) : '—'}
                     </div>
                   </td>
-                );
+                )
               })}
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-function SHAPFactors({ factors }) {
-  let parsed = factors;
-  if (typeof factors === 'string') {
-    try { parsed = JSON.parse(factors); } catch { return null; }
-  }
-  if (!Array.isArray(parsed) || parsed.length === 0) return null;
-
-  return (
-    <div className="mt-2">
-      <p className="text-xs text-gray-400 mb-2">Key Risk Factors:</p>
-      {parsed.map((f, i) => (
-        <div key={i} className="flex items-center gap-2 mb-1.5">
-          <span className="text-xs text-gray-300 w-40 flex-shrink-0">{f.factor}</span>
-          <div className="flex-1 bg-gray-700 rounded-full h-1.5">
-            <div
-              className="h-1.5 rounded-full bg-indigo-500"
-              style={{ width: `${Math.abs(f.value) * 100}%` }}
-            />
+      <div className="flex items-center gap-3 mt-3">
+        {[
+          { color: 'bg-red-700',    label: 'High (70+)' },
+          { color: 'bg-orange-600', label: 'Medium (40-70)' },
+          { color: 'bg-yellow-600', label: 'Low (20-40)' },
+          { color: 'bg-green-800',  label: 'Minimal (<20)' },
+        ].map(({ color, label }) => (
+          <div key={label} className="flex items-center gap-1">
+            <span className={`h-2.5 w-2.5 rounded ${color}`} />
+            <span className="text-[10px] text-gray-400">{label}</span>
           </div>
-          <span className={`text-xs w-10 text-right ${f.value > 0 ? 'text-red-400' : 'text-green-400'}`}>
-            {f.value > 0 ? '+' : ''}{(f.value * 100).toFixed(0)}%
-          </span>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
-  );
+  )
 }
 
-export default function PredictionPanel() {
-  const [predictions, setPredictions] = useState([]);
-  const [selectedDistrict, setSelectedDistrict] = useState('BEU');
-  const [loading, setLoading] = useState(true);
-  const [patrolMsg, setPatrolMsg] = useState(null);
-  const [loadingPatrol, setLoadingPatrol] = useState(false);
+// ── Main component ─────────────────────────────────────────────────────────────
+export default function PredictionPanel({ district, user }) {
+  const { t } = useTranslation()
 
+  const [predictions, setPredictions] = useState([])
+  const [shapFactors, setShapFactors] = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [error,       setError]       = useState(null)
+  const [selDistrict, setSelDistrict] = useState(
+    (district && district !== 'All Districts') ? district : 'Bengaluru Urban'
+  )
+  const [patrolLoading, setPatrolLoading] = useState(false)
+
+  // Sync prop district
+  useEffect(() => {
+    if (district && district !== 'All Districts') setSelDistrict(district)
+  }, [district])
+
+  // ── Load predictions ───────────────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
+      setLoading(true)
+      setError(null)
       try {
-        const res = await fetch('/api/predictions');
-        const data = await res.json();
-        setPredictions(data.predictions || []);
+        const params = new URLSearchParams({ district: selDistrict })
+        const res    = await fetch(`/api/predictions?${params}`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        setPredictions(data.predictions || data || [])
+        setShapFactors(data.shap_factors || data.factors || [])
       } catch (err) {
-        console.error('Prediction load error:', err);
+        setError(err.message)
+        // Demo data
+        setPredictions(getDemoPredictions(selDistrict))
+        setShapFactors(DEMO_SHAP)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    load();
-  }, []);
-
-  const districtPreds = predictions.filter(p => p.DistrictID === selectedDistrict);
-
-  const lineData = (() => {
-    const dateMap = {};
-    districtPreds.forEach(p => {
-      if (!dateMap[p.PredictionDate]) dateMap[p.PredictionDate] = { date: p.PredictionDate };
-      dateMap[p.PredictionDate][p.CrimeType] = p.PredictedCount;
-    });
-    return Object.values(dateMap).sort((a, b) => a.date.localeCompare(b.date)).map(d => ({
-      ...d,
-      date: new Date(d.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
-    }));
-  })();
-
-  const crimeTypes = [...new Set(districtPreds.map(p => p.CrimeType))];
-
-  const topPred = districtPreds.reduce((max, p) => (!max || p.RiskScore > max.RiskScore) ? p : max, null);
-
-  const handlePatrolReco = async () => {
-    setLoadingPatrol(true);
-    setPatrolMsg(null);
-    try {
-      const distName = DISTRICTS.find(d => d.id === selectedDistrict)?.name || selectedDistrict;
-      const res = await fetch('/api/chat/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: `Where should I deploy patrol tonight in ${distName}? What are the predicted high-risk areas?`,
-          session_id: `patrol-${selectedDistrict}-${Date.now()}`,
-          district_filter: selectedDistrict,
-        }),
-      });
-      const data = await res.json();
-      setPatrolMsg(data.response || 'No recommendation available.');
-    } catch (err) {
-      setPatrolMsg('Failed to get patrol recommendation. Please try again.');
-    } finally {
-      setLoadingPatrol(false);
     }
-  };
+    load()
+  }, [selDistrict])
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-full text-gray-400">Loading predictions...</div>;
-  }
+  // ── Patrol recommendation via chat ────────────────────────────────────────
+  const getPatrolRec = useCallback(async () => {
+    setPatrolLoading(true)
+    try {
+      const res = await fetch('/api/chat/query', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          query:   `Where should I deploy patrol in ${selDistrict} tonight? Use prediction data.`,
+          intent:  'PATROL_RECOMMENDATION',
+          district: selDistrict,
+          session_id: `patrol-${Date.now()}`,
+        }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      alert(`KAVERI Patrol Recommendation:\n\n${data.response || data.answer || 'No recommendation available.'}`)
+    } catch (err) {
+      alert('Patrol recommendation failed: ' + err.message)
+    } finally {
+      setPatrolLoading(false)
+    }
+  }, [selDistrict])
 
-  return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-white">7-Day Crime Predictions</h2>
-        <div className="flex items-center gap-3">
-          <select
-            value={selectedDistrict}
-            onChange={e => setSelectedDistrict(e.target.value)}
-            className="bg-gray-800 text-white text-sm border border-gray-600 rounded px-3 py-1.5"
-          >
-            {DISTRICTS.map(d => (
-              <option key={d.id} value={d.id}>{d.name}</option>
-            ))}
-          </select>
-          <button
-            onClick={handlePatrolReco}
-            disabled={loadingPatrol}
-            className="bg-indigo-700 hover:bg-indigo-600 disabled:bg-indigo-900 text-white text-sm px-3 py-1.5 rounded transition-colors whitespace-nowrap"
-          >
-            {loadingPatrol ? '...' : '🚔 Patrol Reco'}
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto space-y-4">
-        {patrolMsg && (
-          <div className="bg-indigo-900 border border-indigo-600 rounded-lg p-4">
-            <p className="text-xs font-bold text-indigo-300 mb-2">KAVERI Patrol Recommendation</p>
-            <p className="text-sm text-white">{patrolMsg}</p>
-          </div>
-        )}
-
-        {topPred && (
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-gray-800 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-red-400">{Math.round((topPred.RiskScore || 0) * 100)}%</div>
-              <div className="text-xs text-gray-400 mt-1">Peak Risk Score</div>
-              <div className="text-xs text-gray-500">{topPred.CrimeType}</div>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-orange-400">{topPred.PredictedCount}</div>
-              <div className="text-xs text-gray-400 mt-1">Peak Predicted Count</div>
-              <div className="text-xs text-gray-500">{topPred.PredictionDate}</div>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-purple-400">{crimeTypes.length}</div>
-              <div className="text-xs text-gray-400 mt-1">Crime Types Tracked</div>
-              <div className="text-xs text-gray-500">XGBoost Model</div>
-            </div>
-          </div>
-        )}
-
-        <div className="bg-gray-800 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-300 mb-3">7-Day Predicted Crime Counts</h3>
-          {lineData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={lineData} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="date" tick={{ fill: '#9ca3af', fontSize: 11 }} />
-                <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} />
-                <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', color: '#f3f4f6' }} />
-                <Legend wrapperStyle={{ color: '#9ca3af', fontSize: 11 }} />
-                {crimeTypes.map(ct => (
-                  <Line
-                    key={ct}
-                    type="monotone"
-                    dataKey={ct}
-                    stroke={CRIME_COLORS[ct] || '#6b7280'}
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5 }}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-48 flex items-center justify-center text-gray-500">No prediction data for this district</div>
-          )}
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-300 mb-3">Risk Calendar (Next 7 Days)</h3>
-          <RiskCalendar predictions={predictions} district={selectedDistrict} />
-        </div>
-
-        {topPred?.SHAPFactors && (
-          <div className="bg-gray-800 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">AI Explainability — Risk Factors</h3>
-            <SHAPFactors factors={topPred.SHAPFactors} />
-          </div>
-        )}
+  if (loading) return (
+    <div className="flex items-center justify-center h-full bg-gray-900">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+        <p className="text-sm text-gray-400">{t('loading')}</p>
       </div>
     </div>
-  );
+  )
+
+  return (
+    <div className="h-full overflow-y-auto bg-gray-900 px-4 py-4 space-y-4">
+
+      {/* Header controls */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <h2 className="text-sm font-bold text-white">{t('predicted7Day')}</h2>
+        <div className="flex-1 min-w-[160px] max-w-xs">
+          <select
+            value={selDistrict}
+            onChange={e => setSelDistrict(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg px-2 py-1.5
+                       focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            {DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+        <button
+          onClick={getPatrolRec}
+          disabled={patrolLoading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
+                     bg-emerald-700 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50"
+        >
+          {patrolLoading ? <SpinnerIcon /> : <PatrolIcon />}
+          {t('patrolRec')}
+        </button>
+      </div>
+
+      {error && (
+        <div className="text-xs text-yellow-500 bg-yellow-900/20 border border-yellow-700 rounded-lg px-3 py-2">
+          API unavailable — demo prediction data shown
+        </div>
+      )}
+
+      {/* 7-day line chart */}
+      {predictions.length > 0 && (
+        <ForecastLineChart data={predictions} district={selDistrict} />
+      )}
+
+      {/* SHAP factors */}
+      {shapFactors.length > 0 && (
+        <SHAPChart factors={shapFactors} />
+      )}
+
+      {/* Risk calendar */}
+      {predictions.length > 0 && (
+        <RiskCalendar predictions={predictions} t={t} />
+      )}
+
+      {predictions.length === 0 && !loading && (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-gray-500 text-sm">{t('noData')}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function formatDate(dateStr) {
+  try {
+    return new Date(dateStr).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
+  } catch { return dateStr }
+}
+
+// ── Demo data ──────────────────────────────────────────────────────────────────
+function getDemoPredictions(district) {
+  const today   = new Date()
+  const types   = ['Theft','Robbery','Cyber Fraud','Assault']
+  const rows    = []
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today)
+    date.setDate(today.getDate() + i)
+    const dateStr = date.toISOString().split('T')[0]
+    types.forEach(ct => {
+      rows.push({
+        district,
+        date:            dateStr,
+        prediction_date: dateStr,
+        crime_type:      ct,
+        predicted_count: Math.round(10 + Math.random() * 40),
+        risk_score:      Math.random(),
+      })
+    })
+  }
+  return rows
+}
+
+const DEMO_SHAP = [
+  { feature: 'is_weekend',        shap_value:  0.42 },
+  { feature: 'unemployment_rate', shap_value:  0.38 },
+  { feature: 'festival_day',      shap_value:  0.31 },
+  { feature: 'prev_week_crimes',  shap_value:  0.28 },
+  { feature: 'youth_population',  shap_value:  0.21 },
+  { feature: 'poverty_rate',      shap_value:  0.19 },
+  { feature: 'literacy_rate',     shap_value: -0.15 },
+  { feature: 'police_density',    shap_value: -0.24 },
+]
+
+// ── Icons ──────────────────────────────────────────────────────────────────────
+function PatrolIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+    </svg>
+  )
+}
+
+function SpinnerIcon() {
+  return (
+    <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  )
 }
