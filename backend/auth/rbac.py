@@ -5,7 +5,20 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
+try:
+    from jose import JWTError, jwt as _jose_jwt
+    def _encode(payload, secret, algorithm):
+        return _jose_jwt.encode(payload, secret, algorithm=algorithm)
+    def _decode(token, secret, algorithms):
+        return _jose_jwt.decode(token, secret, algorithms=algorithms)
+    _JWTError = JWTError
+except Exception:
+    import jwt as _pyjwt
+    def _encode(payload, secret, algorithm):
+        return _pyjwt.encode(payload, secret, algorithm=algorithm)
+    def _decode(token, secret, algorithms):
+        return _pyjwt.decode(token, secret, algorithms=algorithms)
+    _JWTError = _pyjwt.PyJWTError
 from pydantic import BaseModel
 
 logger = logging.getLogger("kaveri.auth")
@@ -91,14 +104,14 @@ def create_token(username: str, user_data: dict) -> str:
         "exp": datetime.utcnow() + timedelta(hours=TOKEN_EXPIRE_HOURS),
         "iat": datetime.utcnow(),
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm=ALGORITHM)
+    return _encode(payload, JWT_SECRET, ALGORITHM)
 
 
 def decode_token(token: str) -> dict:
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
+        payload = _decode(token, JWT_SECRET, algorithms=[ALGORITHM])
         return payload
-    except JWTError as e:
+    except _JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid token: {str(e)}",

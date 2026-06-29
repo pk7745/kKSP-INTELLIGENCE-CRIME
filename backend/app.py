@@ -1,60 +1,57 @@
+"""
+KAVERI backend entry point — FastAPI + WebSocket via uvicorn/Starlette.
+Runs on PORT (default 9000).  WebSocket at /ws, REST at /api/*, webhook at /webhook/*.
+"""
 import os
 import asyncio
 import json
 import logging
-from typing import Dict, Set
-import tornado.web
-import tornado.websocket
-import tornado.ioloop
-import tornado.httpserver
-from tornado.platform.asyncio import AsyncIOMainLoop
-import uvicorn
-from fastapi import FastAPI
+from typing import Set
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("kaveri")
 
-# --- Global state ---
+
+# ── Global WebSocket manager (imported by other modules) ──────────────────────
 class WebSocketManager:
     def __init__(self):
-        self.connections: Set[tornado.websocket.WebSocketHandler] = set()
+        self.connections: Set[WebSocket] = set()
+
+    async def connect(self, ws: WebSocket):
+        await ws.accept()
+        self.connections.add(ws)
+        logger.info(f"WS connected. Total: {len(self.connections)}")
+
+    def disconnect(self, ws: WebSocket):
+        self.connections.discard(ws)
 
     async def broadcast(self, message: dict):
-        disconnected = set()
-        msg = json.dumps(message)
-        for conn in self.connections:
+        dead = set()
+        text = json.dumps(message, default=str)
+        for ws in list(self.connections):
             try:
-                conn.write_message(msg)
+                await ws.send_text(text)
             except Exception:
-                disconnected.add(conn)
-        self.connections -= disconnected
+                dead.add(ws)
+        self.connections -= dead
+
 
 ws_manager = WebSocketManager()
 
+
+# ── App state (ML model etc.) ─────────────────────────────────────────────────
 class AppState:
     model = None
     embeddings = None
 
 app_state = AppState()
 
-# --- WebSocket Handler ---
-class KAVERIWebSocket(tornado.websocket.WebSocketHandler):
-    def check_origin(self, origin):
-        return True
 
-    def open(self):
-        ws_manager.connections.add(self)
-        logger.info(f"WS connected. Total: {len(ws_manager.connections)}")
-        self.write_message(json.dumps({"type": "connected", "message": "KAVERI WebSocket ready"}))
-
-    def on_message(self, message):
-        pass
-
-    def on_close(self):
-        ws_manager.connections.discard(self)
-
-# --- FastAPI app ---
+# ── FastAPI app ───────────────────────────────────────────────────────────────
 from api.firs import router as firs_router
 from api.network import router as network_router
 from api.hotspots import router as hotspots_router
@@ -65,10 +62,11 @@ from api.export import router as export_router
 from api.webhook import router as webhook_router
 from ai.kaveri_engine import router as chat_router
 from auth.rbac import router as auth_router
-from simulator.event_streamer import router as simulator_router
+from simulator.event_streamer import router as sim_router
 
-fastapi_app = FastAPI(title="KAVERI API", version="1.0.0")
-fastapi_app.add_middleware(
+app = FastAPI(title="KAVERI API", version="1.0.0")
+
+app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -76,42 +74,50 @@ fastapi_app.add_middleware(
     allow_headers=["*"],
 )
 
-fastapi_app.include_router(firs_router, prefix="/api/firs", tags=["FIRs"])
-fastapi_app.include_router(network_router, prefix="/api/network", tags=["Network"])
-fastapi_app.include_router(hotspots_router, prefix="/api/hotspots", tags=["Hotspots"])
-fastapi_app.include_router(predictions_router, prefix="/api/predictions", tags=["Predictions"])
-fastapi_app.include_router(alerts_router, prefix="/api/alerts", tags=["Alerts"])
-fastapi_app.include_router(stats_router, prefix="/api/stats", tags=["Stats"])
-fastapi_app.include_router(export_router, prefix="/api/export", tags=["Export"])
-fastapi_app.include_router(webhook_router, prefix="/webhook", tags=["Webhook"])
-fastapi_app.include_router(chat_router, prefix="/api/chat", tags=["Chat"])
-fastapi_app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
-fastapi_app.include_router(simulator_router, prefix="/api", tags=["Simulator"])
+app.include_router(auth_router,        prefix="/api/auth",        tags=["Auth"])
+app.include_router(chat_router,        prefix="/api/chat",        tags=["Chat"])
+app.include_router(firs_router,        prefix="/api/firs",        tags=["FIRs"])
+app.include_router(network_router,     prefix="/api/network",     tags=["Network"])
+app.include_router(hotspots_router,    prefix="/api/hotspots",    tags=["Hotspots"])
+app.include_router(predictions_router, prefix="/api/predictions", tags=["Predictions"])
+app.include_router(alerts_router,      prefix="/api/alerts",      tags=["Alerts"])
+app.include_router(stats_router,       prefix="/api/stats",       tags=["Stats"])
+app.include_router(export_router,      prefix="/api/export",      tags=["Export"])
+app.include_router(webhook_router,     prefix="/webhook",         tags=["Webhook"])
+app.include_router(sim_router,         prefix="/api/simulator",   tags=["Simulator"])
 
-@fastapi_app.get("/api/health")
+
+@app.get("/api/health")
 async def health():
-    return {"status": "ok", "service": "KAVERI"}
+    return {
+        "status": "ok",
+        "service": "KAVERI",
+        "ws_connections": len(ws_manager.connections),
+    }
 
-# --- Tornado app ---
-def make_app():
-    from tornado.wsgi import WSGIContainer
-    from tornado.web import FallbackHandler
-    api_container = WSGIContainer(fastapi_app)
-    return tornado.web.Application([
-        (r"/ws", KAVERIWebSocket),
-        (r"/api/.*", FallbackHandler, dict(fallback=api_container)),
-        (r"/webhook/.*", FallbackHandler, dict(fallback=api_container)),
-        (r"/health.*", FallbackHandler, dict(fallback=api_container)),
-    ])
 
-async def main():
-    AsyncIOMainLoop().install()
-    app = make_app()
-    port = int(os.environ.get("PORT", 9000))
-    server = tornado.httpserver.HTTPServer(app)
-    server.listen(port)
-    logger.info(f"KAVERI server started on port {port}")
-    await asyncio.Event().wait()
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await ws_manager.connect(websocket)
+    try:
+        await websocket.send_text(json.dumps({
+            "type": "connected",
+            "message": "KAVERI WebSocket ready",
+        }))
+        while True:
+            data = await websocket.receive_text()
+            try:
+                msg = json.loads(data)
+                if msg.get("type") == "ping":
+                    await websocket.send_text(json.dumps({"type": "pong"}))
+            except Exception:
+                pass
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+        logger.info(f"WS disconnected. Total: {len(ws_manager.connections)}")
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    port = int(os.environ.get("PORT", 9000))
+    logger.info(f"Starting KAVERI on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
