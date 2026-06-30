@@ -146,7 +146,7 @@ async def query_datastore_for_intent(
             data = result.get("data", [])
 
         elif intent == "VICTIM_QUERY":
-            zcql = f"""SELECT v.Age, v.Gender, v.Occupation, c.CrimeSubHeadID, c.DistrictID
+            zcql = f"""SELECT v.AgeYear, v.GenderID, v.Occupation, c.CrimeMinorHeadID, c.CrimeMajorHeadID, c.DistrictID
                        FROM Victim v JOIN CaseMaster c ON v.CaseMasterID = c.ROWID
                        WHERE 1=1 {district_clause} LIMIT 100"""
             result = datastore.execute_query(zcql)
@@ -251,8 +251,8 @@ def _mock_data_for_intent(intent: str, district_filter: Optional[str]) -> list:
             {"AccusedName": "Suresh Naik", "CaseCount": 3, "DistrictID": "BEU"},
         ],
         "VICTIM_QUERY": [
-            {"Age": 28, "Gender": "F", "Occupation": "Student", "CrimeSubHeadID": "EVE_TEAS", "DistrictID": "BEU"},
-            {"Age": 45, "Gender": "M", "Occupation": "Businessman", "CrimeSubHeadID": "THEFT", "DistrictID": "MYS"},
+            {"AgeYear": 28, "GenderID": 2, "Occupation": "Student", "CrimeMinorHeadID": 11, "CrimeMajorHeadID": 3, "DistrictID": "BEU"},
+            {"AgeYear": 45, "GenderID": 1, "Occupation": "Businessman", "CrimeMinorHeadID": 5, "CrimeMajorHeadID": 2, "DistrictID": "MYS"},
         ],
         "ARREST_QUERY": [
             {"AccusedName": "Ravi Kumar", "ArrestDate": "2024-10-15", "CrimeNo": "1BEU0001202400001", "DistrictID": "BEU"},
