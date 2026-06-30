@@ -14,98 +14,87 @@ router = APIRouter()
 _streamer_task: Optional[asyncio.Task] = None
 _running = False
 
-# Seeded FIR templates for realistic simulation
+# Seeded FIR templates — field names per official KSP ER diagram
+# CrimeMajorHeadID → FK→CrimeHead, CrimeMinorHeadID → FK→CrimeSubHead
+# GravityOffenceID: 1=Heinous, 2=Serious, 3=Other Cognizable
 _FIR_TEMPLATES = [
     {
-        "CrimeSubHeadID": "THEFT",
-        "DistrictID": "BEU",
-        "UnitID": "BEU0001",
-        "Latitude": 12.9716,
-        "Longitude": 77.5946,
+        "CrimeMajorHeadID": 2, "CrimeMinorHeadID": 5,   # Crimes Against Property / Theft
+        "GravityOffenceID": 3, "CaseCategoryID": 1,
+        "DistrictID": "BEU", "UnitID": "0001",
+        "latitude": 12.9716, "longitude": 77.5946,
         "BriefFacts": "Theft of two-wheeler from parking lot near IT park.",
-        "GravityOffenceID": 3,
     },
     {
-        "CrimeSubHeadID": "ROBBERY",
-        "DistrictID": "MYS",
-        "UnitID": "MYS0001",
-        "Latitude": 12.2958,
-        "Longitude": 76.6394,
+        "CrimeMajorHeadID": 2, "CrimeMinorHeadID": 6,   # Crimes Against Property / Robbery
+        "GravityOffenceID": 2, "CaseCategoryID": 1,
+        "DistrictID": "MYS", "UnitID": "0001",
+        "latitude": 12.2958, "longitude": 76.6394,
         "BriefFacts": "Chain snatching near Chamundi Hills bus stop. Accused fled on motorcycle.",
-        "GravityOffenceID": 2,
         "AccusedName": "Suresh Naik",
     },
     {
-        "CrimeSubHeadID": "MURDER",
-        "DistrictID": "KLB",
-        "UnitID": "KLB0001",
-        "Latitude": 17.3297,
-        "Longitude": 76.8200,
+        "CrimeMajorHeadID": 1, "CrimeMinorHeadID": 1,   # Crimes Against Body / Murder
+        "GravityOffenceID": 1, "CaseCategoryID": 1,
+        "DistrictID": "KLB", "UnitID": "0001",
+        "latitude": 17.3297, "longitude": 76.8200,
         "BriefFacts": "Suspected homicide — body found near canal. Land dispute motive suspected.",
-        "GravityOffenceID": 1,
     },
     {
-        "CrimeSubHeadID": "CYBER_CRIME",
-        "DistrictID": "DKN",
-        "UnitID": "DKN0001",
-        "Latitude": 12.8698,
-        "Longitude": 74.8431,
+        "CrimeMajorHeadID": 5, "CrimeMinorHeadID": 16,  # Cyber Crimes / Cyber Fraud
+        "GravityOffenceID": 3, "CaseCategoryID": 1,
+        "DistrictID": "DKS", "UnitID": "0001",
+        "latitude": 12.8698, "longitude": 74.8431,
         "BriefFacts": "Online fraud — victim deceived into transferring Rs 2.5 lakhs via UPI.",
-        "GravityOffenceID": 3,
     },
     {
-        "CrimeSubHeadID": "ASSAULT",
-        "DistrictID": "BLR",
-        "UnitID": "BLR0001",
-        "Latitude": 15.8497,
-        "Longitude": 74.4977,
+        "CrimeMajorHeadID": 1, "CrimeMinorHeadID": 4,   # Crimes Against Body / Assault
+        "GravityOffenceID": 2, "CaseCategoryID": 1,
+        "DistrictID": "BLG", "UnitID": "0001",
+        "latitude": 15.8497, "longitude": 74.4977,
         "BriefFacts": "Physical assault during property dispute. Victim hospitalised with injuries.",
-        "GravityOffenceID": 2,
     },
     {
-        "CrimeSubHeadID": "THEFT",
-        "DistrictID": "BMR",
-        "UnitID": "BMR0001",
-        "Latitude": 13.0827,
-        "Longitude": 77.5970,
+        "CrimeMajorHeadID": 2, "CrimeMinorHeadID": 8,   # Crimes Against Property / Burglary
+        "GravityOffenceID": 3, "CaseCategoryID": 1,
+        "DistrictID": "BMR", "UnitID": "0001",
+        "latitude": 13.0827, "longitude": 77.5970,
         "BriefFacts": "House burglary during daytime — valuables and electronics stolen.",
-        "GravityOffenceID": 3,
     },
     {
-        "CrimeSubHeadID": "ROBBERY",
-        "DistrictID": "BEU",
-        "UnitID": "BEU0002",
-        "Latitude": 12.9352,
-        "Longitude": 77.6245,
+        "CrimeMajorHeadID": 2, "CrimeMinorHeadID": 6,   # Crimes Against Property / Robbery
+        "GravityOffenceID": 1, "CaseCategoryID": 1,
+        "DistrictID": "BEU", "UnitID": "0002",
+        "latitude": 12.9352, "longitude": 77.6245,
         "BriefFacts": "Armed robbery at ATM vestibule. Two accused, one arrested at scene.",
-        "GravityOffenceID": 1,
         "AccusedName": "Ravi Kumar",
     },
     {
-        "CrimeSubHeadID": "EVE_TEAS",
-        "DistrictID": "MYS",
-        "UnitID": "MYS0002",
-        "Latitude": 12.3051,
-        "Longitude": 76.6552,
-        "BriefFacts": "Eve-teasing reported near college campus. Victim filed complaint.",
-        "GravityOffenceID": 2,
+        "CrimeMajorHeadID": 3, "CrimeMinorHeadID": 11,  # Crimes Against Women / Molestation
+        "GravityOffenceID": 2, "CaseCategoryID": 1,
+        "DistrictID": "MYS", "UnitID": "0002",
+        "latitude": 12.3051, "longitude": 76.6552,
+        "BriefFacts": "Eve-teasing and molestation reported near college campus. Victim filed complaint.",
     },
 ]
 
 _serial_counters: dict = {}
 
 
-def _generate_crime_no(district_id: str) -> str:
-    """Generate a sequential CrimeNo in KSP CCTNS format."""
+def _generate_crime_no(district_id: str, unit_id: str = "0001") -> str:
+    """
+    Generate sequential CrimeNo in official KSP CCTNS format per ER diagram:
+    1-digit CaseCategoryCode + 4-digit DistrictID + 4-digit PoliceStationID + 4-digit Year + 5-digit Serial
+    Example: 104430006202600001
+    """
     year = datetime.utcnow().year
     if district_id not in _serial_counters:
         _serial_counters[district_id] = random.randint(500, 999)
     _serial_counters[district_id] += 1
-    serial = _serial_counters[district_id]
-    # Format: CaseCategoryCode(1) + DistrictID padded + StationID padded + Year + Serial
-    # Simplified for demo
-    district_code = district_id[:3].upper().ljust(3, "0")
-    return f"1{district_code}0001{year}{serial:05d}"
+    serial       = _serial_counters[district_id]
+    dist_part    = district_id[:4].ljust(4, "0")
+    station_part = unit_id[:4].ljust(4, "0")
+    return f"1{dist_part}{station_part}{year}{serial:05d}"
 
 
 def _add_gps_noise(lat: float, lng: float, radius_km: float = 0.5) -> tuple:
@@ -121,20 +110,23 @@ def _add_gps_noise(lat: float, lng: float, radius_km: float = 0.5) -> tuple:
 async def _stream_single_event():
     """Pick a random FIR template and ingest it via the webhook endpoint."""
     template = random.choice(_FIR_TEMPLATES)
-    crime_no = _generate_crime_no(template["DistrictID"])
-    lat, lng = _add_gps_noise(template["Latitude"], template["Longitude"])
+    crime_no = _generate_crime_no(template["DistrictID"], template.get("UnitID", "0001"))
+    lat, lng = _add_gps_noise(template["latitude"], template["longitude"])
 
     fir_data = {
-        "CrimeNo": crime_no,
-        "CrimeSubHeadID": template["CrimeSubHeadID"],
-        "DistrictID": template["DistrictID"],
-        "UnitID": template["UnitID"],
-        "CrimeDateTime": datetime.utcnow().isoformat(),
-        "Latitude": round(lat, 6),
-        "Longitude": round(lng, 6),
-        "BriefFacts": template["BriefFacts"],
+        "CrimeNo":          crime_no,
+        "CaseCategoryID":   template.get("CaseCategoryID", 1),
         "GravityOffenceID": template.get("GravityOffenceID"),
-        "AccusedName": template.get("AccusedName"),
+        "CrimeMajorHeadID": template.get("CrimeMajorHeadID"),
+        "CrimeMinorHeadID": template.get("CrimeMinorHeadID"),
+        "CaseStatusID":     1,
+        "DistrictID":       template["DistrictID"],
+        "UnitID":           template["UnitID"],
+        "CrimeDateTime":    datetime.utcnow().isoformat(),
+        "latitude":         round(lat, 6),
+        "longitude":        round(lng, 6),
+        "BriefFacts":       template["BriefFacts"],
+        "AccusedName":      template.get("AccusedName"),
     }
 
     try:

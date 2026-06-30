@@ -162,10 +162,10 @@ async def query_datastore_for_intent(
             data = result.get("data", [])
 
         elif intent == "TREND_QUERY":
-            zcql = f"""SELECT CrimeSubHeadID, DistrictID, COUNT(ROWID) as Count,
-                       SUBSTR(CrimeDateTime, 1, 7) as Month
+            zcql = f"""SELECT CrimeMinorHeadID, CrimeMajorHeadID, DistrictID, COUNT(ROWID) as Count,
+                       SUBSTR(IncidentFromDate, 1, 7) as Month
                        FROM CaseMaster WHERE 1=1 {district_clause}
-                       GROUP BY CrimeSubHeadID, DistrictID, Month
+                       GROUP BY CrimeMinorHeadID, CrimeMajorHeadID, DistrictID, Month
                        ORDER BY Month DESC LIMIT 50"""
             result = datastore.execute_query(zcql)
             data = result.get("data", [])
@@ -186,11 +186,12 @@ async def query_datastore_for_intent(
             data = result.get("data", [])
 
         elif intent == "CHARGESHEET_QUERY":
-            zcql = f"""SELECT cd.ChargesheetStatus, COUNT(cd.ROWID) as Count, c.DistrictID
+            # cstype per ER diagram: A=Chargesheet filed, B=False Case, C=Undetected
+            zcql = f"""SELECT cd.cstype, COUNT(cd.ROWID) as Count, c.DistrictID
                        FROM ChargesheetDetails cd
                        JOIN CaseMaster c ON cd.CaseMasterID = c.ROWID
                        WHERE 1=1 {district_clause}
-                       GROUP BY cd.ChargesheetStatus, c.DistrictID"""
+                       GROUP BY cd.cstype, c.DistrictID"""
             result = datastore.execute_query(zcql)
             data = result.get("data", [])
 
@@ -258,9 +259,9 @@ def _mock_data_for_intent(intent: str, district_filter: Optional[str]) -> list:
             {"AccusedName": "Suresh Naik", "ArrestDate": "2024-10-14", "CrimeNo": "1BEU0002202400002", "DistrictID": "BEU"},
         ],
         "TREND_QUERY": [
-            {"CrimeSubHeadID": "THEFT", "DistrictID": "BEU", "Count": 847, "Month": "2024-10"},
-            {"CrimeSubHeadID": "THEFT", "DistrictID": "BEU", "Count": 712, "Month": "2024-09"},
-            {"CrimeSubHeadID": "ROBBERY", "DistrictID": "BEU", "Count": 234, "Month": "2024-10"},
+            {"CrimeMinorHeadID": 5, "CrimeMajorHeadID": 2, "DistrictID": "BEU", "Count": 847, "Month": "2024-10"},
+            {"CrimeMinorHeadID": 5, "CrimeMajorHeadID": 2, "DistrictID": "BEU", "Count": 712, "Month": "2024-09"},
+            {"CrimeMinorHeadID": 6, "CrimeMajorHeadID": 2, "DistrictID": "BEU", "Count": 234, "Month": "2024-10"},
         ],
         "PREDICTION_QUERY": [
             {"DistrictID": "BEU", "DistrictName": "Bengaluru Urban", "CrimeType": "Theft", "RiskScore": 0.89, "PredictedCount": 145, "date": "2024-11-01", "shap_factors": "Festival season, high foot traffic"},
@@ -271,9 +272,9 @@ def _mock_data_for_intent(intent: str, district_filter: Optional[str]) -> list:
             {"AccusedName": "Suresh Naik", "CaseCount": 3, "DistrictID": "BEU"},
         ],
         "CHARGESHEET_QUERY": [
-            {"ChargesheetStatus": "A", "Count": 3421, "DistrictID": "BEU"},
-            {"ChargesheetStatus": "B", "Count": 412, "DistrictID": "BEU"},
-            {"ChargesheetStatus": "C", "Count": 987, "DistrictID": "BEU"},
+            {"cstype": "A", "Count": 3421, "DistrictID": "BEU"},
+            {"cstype": "B", "Count": 412,  "DistrictID": "BEU"},
+            {"cstype": "C", "Count": 987,  "DistrictID": "BEU"},
         ],
         "PATROL_RECOMMENDATION": [
             {"DistrictID": "BEU", "DistrictName": "Bengaluru Urban", "lat": 12.9716, "lng": 77.5946, "score": 92, "crimeCount": 1247, "dominantCrimeType": "Theft"},

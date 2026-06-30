@@ -1,0 +1,67 @@
+DistrictID,DistrictName,CrimeMinorHeadID,CrimeSubHeadName,CrimeMajorHeadID,CrimeHeadName,Count2022,Count2023,Count2024
+BEU,Bengaluru Urban,5,Theft,2,Crimes Against Property,8420,9012,9605
+BEU,Bengaluru Urban,6,Robbery,2,Crimes Against Property,1100,1234,1234
+BEU,Bengaluru Urban,1,Murder,1,Crimes Against Body,98,104,892
+BEU,Bengaluru Urban,16,Cyber Fraud,5,Cyber Crimes,2800,3100,3421
+BEU,Bengaluru Urban,10,Rape,3,Crimes Against Women,380,395,412
+BEU,Bengaluru Urban,4,Assault / Hurt,1,Crimes Against Body,2100,2200,2341
+BEU,Bengaluru Urban,9,Vehicle Theft,2,Crimes Against Property,3800,4000,4211
+MYS,Mysuru,5,Theft,2,Crimes Against Property,3210,3480,3211
+MYS,Mysuru,6,Robbery,2,Crimes Against Property,412,445,456
+MYS,Mysuru,1,Murder,1,Crimes Against Body,67,74,234
+MYS,Mysuru,16,Cyber Fraud,5,Cyber Crimes,780,820,876
+MYS,Mysuru,10,Rape,3,Crimes Against Women,98,105,112
+MYS,Mysuru,4,Assault / Hurt,1,Crimes Against Body,820,850,876
+MYS,Mysuru,9,Vehicle Theft,2,Crimes Against Property,1300,1380,1432
+MNG,Mangaluru,5,Theft,2,Crimes Against Property,2100,2200,2100
+MNG,Mangaluru,6,Robbery,2,Crimes Against Property,280,298,312
+MNG,Mangaluru,1,Murder,1,Crimes Against Body,45,52,156
+MNG,Mangaluru,16,Cyber Fraud,5,Cyber Crimes,580,620,654
+MNG,Mangaluru,10,Rape,3,Crimes Against Women,65,71,78
+MNG,Mangaluru,4,Assault / Hurt,1,Crimes Against Body,490,510,543
+MNG,Mangaluru,9,Vehicle Theft,2,Crimes Against Property,890,930,987
+HUB,Hubballi-Dharwad,5,Theft,2,Crimes Against Property,2800,2900,2800
+HUB,Hubballi-Dharwad,6,Robbery,2,Crimes Against Property,370,382,398
+HUB,Hubballi-Dharwad,1,Murder,1,Crimes Against Body,56,62,198
+HUB,Hubballi-Dharwad,16,Cyber Fraud,5,Cyber Crimes,680,720,765
+HUB,Hubballi-Dharwad,10,Rape,3,Crimes Against Women,88,94,98
+HUB,Hubballi-Dharwad,4,Assault / Hurt,1,Crimes Against Body,610,634,654
+HUB,Hubballi-Dharwad,9,Vehicle Theft,2,Crimes Against Property,1010,1060,1123
+BLG,Belagavi,5,Theft,2,Crimes Against Property,1900,1960,1900
+BLG,Belagavi,6,Robbery,2,Crimes Against Property,245,258,267
+BLG,Belagavi,1,Murder,1,Crimes Against Body,38,42,134
+BLG,Belagavi,16,Cyber Fraud,5,Cyber Crimes,490,515,543
+BLG,Belagavi,10,Rape,3,Crimes Against Women,58,63,67
+BLG,Belagavi,4,Assault / Hurt,1,Crimes Against Body,410,425,432
+BLG,Belagavi,9,Vehicle Theft,2,Crimes Against Property,790,832,876
+KLB,Kalaburagi,5,Theft,2,Crimes Against Property,1650,1720,1650
+KLB,Kalaburagi,6,Robbery,2,Crimes Against Property,210,224,234
+KLB,Kalaburagi,1,Murder,1,Crimes Against Body,33,37,117
+KLB,Kalaburagi,16,Cyber Fraud,5,Cyber Crimes,390,412,432
+KLB,Kalaburagi,10,Rape,3,Crimes Against Women,48,52,56
+KLB,Kalaburagi,4,Assault / Hurt,1,Crimes Against Body,315,330,345
+KLB,Kalaburagi,9,Vehicle Theft,2,Crimes Against Property,590,622,654
+DWD,Davanagere,5,Theft,2,Crimes Against Property,1234,1280,1234
+DWD,Davanagere,6,Robbery,2,Crimes Against Property,162,172,178
+DWD,Davanagere,1,Murder,1,Crimes Against Body,25,28,89
+DWD,Davanagere,16,Cyber Fraud,5,Cyber Crimes,290,308,321
+DWD,Davanagere,4,Assault / Hurt,1,Crimes Against Body,245,255,267
+DWD,Davanagere,9,Vehicle Theft,2,Crimes Against Property,490,516,543
+SHV,Shivamogga,5,Theft,2,Crimes Against Property,987,1020,987
+SHV,Shivamogga,6,Robbery,2,Crimes Against Property,130,138,143
+SHV,Shivamogga,1,Murder,1,Crimes Against Body,20,22,72
+SHV,Shivamogga,16,Cyber Fraud,5,Cyber Crimes,210,222,234
+SHV,Shivamogga,4,Assault / Hurt,1,Crimes Against Body,182,190,198
+SHV,Shivamogga,9,Vehicle Theft,2,Crimes Against Property,390,410,432
+TUM,Tumakuru,5,Theft,2,Crimes Against Property,1456,1510,1456
+TUM,Tumakuru,6,Robbery,2,Crimes Against Property,194,206,212
+TUM,Tumakuru,1,Murder,1,Crimes Against Body,30,33,106
+TUM,Tumakuru,16,Cyber Fraud,5,Cyber Crimes,360,381,398
+TUM,Tumakuru,4,Assault / Hurt,1,Crimes Against Body,285,298,312
+TUM,Tumakuru,9,Vehicle Theft,2,Crimes Against Property,540,568,598
+BER,Bengaluru Rural,5,Theft,2,Crimes Against Property,876,908,876
+BER,Bengaluru Rural,6,Robbery,2,Crimes Against Property,113,120,123
+BER,Bengaluru Rural,1,Murder,1,Crimes Against Body,18,20,62
+BER,Bengaluru Rural,16,Cyber Fraud,5,Cyber Crimes,178,188,198
+BER,Bengaluru Rural,4,Assault / Hurt,1,Crimes Against Body,155,162,167
+BER,Bengaluru Rural,9,Vehicle Theft,2,Crimes Against Property,312,328,345

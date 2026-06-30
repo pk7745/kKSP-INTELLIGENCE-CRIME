@@ -1,5 +1,7 @@
 """
-Seed script: Reference data — States, Districts, Units, Acts, Sections, Ranks, CrimeHeads, CrimeSubHeads.
+Seed script: Reference data — States, Districts, Units, Acts, Sections, Ranks,
+CrimeHeads, CrimeSubHeads, GravityOffence, CaseCategory, CaseStatusMaster,
+OccupationMaster, ReligionMaster, CasteMaster.
 Run locally before deploying. Uploads to Catalyst DataStore.
 """
 import os
@@ -21,143 +23,217 @@ except Exception:
     MOCK = True
 
 STATES = [
-    {"StateID": 29, "StateName": "Karnataka", "StateCode": "KA"},
+    {"StateID": 29, "StateName": "Karnataka", "NationalityID": 1, "Active": 1},
 ]
 
 DISTRICTS = [
-    {"DistrictID": "BEU", "DistrictName": "Bengaluru Urban", "StateID": 29, "Latitude": 12.9716, "Longitude": 77.5946, "Population": 12000000},
-    {"DistrictID": "BER", "DistrictName": "Bengaluru Rural", "StateID": 29, "Latitude": 13.0827, "Longitude": 77.5877, "Population": 990000},
-    {"DistrictID": "MYS", "DistrictName": "Mysuru", "StateID": 29, "Latitude": 12.2958, "Longitude": 76.6394, "Population": 3000000},
-    {"DistrictID": "MNG", "DistrictName": "Mangaluru", "StateID": 29, "Latitude": 12.9141, "Longitude": 74.8560, "Population": 2090000},
-    {"DistrictID": "HUB", "DistrictName": "Hubballi-Dharwad", "StateID": 29, "Latitude": 15.3647, "Longitude": 75.1240, "Population": 2430000},
-    {"DistrictID": "BLG", "DistrictName": "Belagavi", "StateID": 29, "Latitude": 15.8497, "Longitude": 74.4977, "Population": 4780000},
-    {"DistrictID": "KLB", "DistrictName": "Kalaburagi", "StateID": 29, "Latitude": 17.3297, "Longitude": 76.8200, "Population": 2760000},
-    {"DistrictID": "DWD", "DistrictName": "Davanagere", "StateID": 29, "Latitude": 14.4644, "Longitude": 75.9218, "Population": 1980000},
-    {"DistrictID": "SHV", "DistrictName": "Shivamogga", "StateID": 29, "Latitude": 13.9299, "Longitude": 75.5681, "Population": 1760000},
-    {"DistrictID": "TUM", "DistrictName": "Tumakuru", "StateID": 29, "Latitude": 13.3379, "Longitude": 77.1173, "Population": 2680000},
-    {"DistrictID": "KOL", "DistrictName": "Kolar", "StateID": 29, "Latitude": 13.1363, "Longitude": 78.1294, "Population": 1540000},
-    {"DistrictID": "CHI", "DistrictName": "Chikkaballapur", "StateID": 29, "Latitude": 13.4355, "Longitude": 77.7310, "Population": 1250000},
-    {"DistrictID": "RAM", "DistrictName": "Ramanagara", "StateID": 29, "Latitude": 12.7157, "Longitude": 77.2804, "Population": 1080000},
-    {"DistrictID": "CKM", "DistrictName": "Chikkamagaluru", "StateID": 29, "Latitude": 13.3161, "Longitude": 75.7720, "Population": 1140000},
-    {"DistrictID": "HAS", "DistrictName": "Hassan", "StateID": 29, "Latitude": 13.0035, "Longitude": 76.1004, "Population": 1770000},
-    {"DistrictID": "MDY", "DistrictName": "Mandya", "StateID": 29, "Latitude": 12.5218, "Longitude": 76.8951, "Population": 1800000},
-    {"DistrictID": "CHN", "DistrictName": "Chamarajanagar", "StateID": 29, "Latitude": 11.9261, "Longitude": 76.9440, "Population": 1010000},
-    {"DistrictID": "KOD", "DistrictName": "Kodagu", "StateID": 29, "Latitude": 12.4244, "Longitude": 75.7382, "Population": 556000},
-    {"DistrictID": "DKS", "DistrictName": "Dakshina Kannada", "StateID": 29, "Latitude": 12.8438, "Longitude": 75.2479, "Population": 2090000},
-    {"DistrictID": "UDU", "DistrictName": "Udupi", "StateID": 29, "Latitude": 13.3409, "Longitude": 74.7421, "Population": 1180000},
-    {"DistrictID": "UKN", "DistrictName": "Uttara Kannada", "StateID": 29, "Latitude": 14.7902, "Longitude": 74.6800, "Population": 1440000},
-    {"DistrictID": "GDA", "DistrictName": "Gadag", "StateID": 29, "Latitude": 15.4316, "Longitude": 75.6355, "Population": 1070000},
-    {"DistrictID": "DHR", "DistrictName": "Dharwad", "StateID": 29, "Latitude": 15.4589, "Longitude": 75.0078, "Population": 1850000},
-    {"DistrictID": "BPR", "DistrictName": "Bagalkot", "StateID": 29, "Latitude": 16.1802, "Longitude": 75.6968, "Population": 1890000},
-    {"DistrictID": "VJP", "DistrictName": "Vijayapura", "StateID": 29, "Latitude": 16.8302, "Longitude": 75.7100, "Population": 2170000},
-    {"DistrictID": "BDR", "DistrictName": "Bidar", "StateID": 29, "Latitude": 17.9104, "Longitude": 77.5199, "Population": 1720000},
-    {"DistrictID": "YDG", "DistrictName": "Yadgir", "StateID": 29, "Latitude": 16.7710, "Longitude": 77.1384, "Population": 1180000},
-    {"DistrictID": "RCH", "DistrictName": "Raichur", "StateID": 29, "Latitude": 16.2120, "Longitude": 77.3439, "Population": 1930000},
-    {"DistrictID": "KPN", "DistrictName": "Koppal", "StateID": 29, "Latitude": 15.3508, "Longitude": 76.1547, "Population": 1390000},
-    {"DistrictID": "BGT", "DistrictName": "Ballari", "StateID": 29, "Latitude": 15.1394, "Longitude": 76.9214, "Population": 2540000},
-    {"DistrictID": "CHD", "DistrictName": "Chitradurga", "StateID": 29, "Latitude": 14.2251, "Longitude": 76.3981, "Population": 1660000},
-    {"DistrictID": "VJN", "DistrictName": "Vijayapura (Bijapur)", "StateID": 29, "Latitude": 16.8302, "Longitude": 75.7100, "Population": 2170000},
-    {"DistrictID": "TDV", "DistrictName": "Tumkur Division", "StateID": 29, "Latitude": 13.3379, "Longitude": 77.1173, "Population": 2680000},
-    {"DistrictID": "MYD", "DistrictName": "Mysuru Division", "StateID": 29, "Latitude": 12.2958, "Longitude": 76.6394, "Population": 3000000},
-    {"DistrictID": "RNG", "DistrictName": "Ramnagara", "StateID": 29, "Latitude": 12.7157, "Longitude": 77.2804, "Population": 1080000},
-    {"DistrictID": "CLG", "DistrictName": "Chikkamagalur", "StateID": 29, "Latitude": 13.3161, "Longitude": 75.7720, "Population": 1140000},
-    {"DistrictID": "BNP", "DistrictName": "Bidar North Patrol", "StateID": 29, "Latitude": 17.9104, "Longitude": 77.5199, "Population": 860000},
-    {"DistrictID": "VDG", "DistrictName": "Vijaypura Division", "StateID": 29, "Latitude": 16.8302, "Longitude": 75.7100, "Population": 2170000},
+    {"DistrictID": "BEU", "DistrictName": "Bengaluru Urban",    "StateID": 29, "Active": 1},
+    {"DistrictID": "BER", "DistrictName": "Bengaluru Rural",    "StateID": 29, "Active": 1},
+    {"DistrictID": "MYS", "DistrictName": "Mysuru",             "StateID": 29, "Active": 1},
+    {"DistrictID": "MNG", "DistrictName": "Mangaluru",          "StateID": 29, "Active": 1},
+    {"DistrictID": "HUB", "DistrictName": "Hubballi-Dharwad",   "StateID": 29, "Active": 1},
+    {"DistrictID": "BLG", "DistrictName": "Belagavi",           "StateID": 29, "Active": 1},
+    {"DistrictID": "KLB", "DistrictName": "Kalaburagi",         "StateID": 29, "Active": 1},
+    {"DistrictID": "DWD", "DistrictName": "Davanagere",         "StateID": 29, "Active": 1},
+    {"DistrictID": "SHV", "DistrictName": "Shivamogga",         "StateID": 29, "Active": 1},
+    {"DistrictID": "TUM", "DistrictName": "Tumakuru",           "StateID": 29, "Active": 1},
+    {"DistrictID": "KOL", "DistrictName": "Kolar",              "StateID": 29, "Active": 1},
+    {"DistrictID": "CHI", "DistrictName": "Chikkaballapur",     "StateID": 29, "Active": 1},
+    {"DistrictID": "RAM", "DistrictName": "Ramanagara",         "StateID": 29, "Active": 1},
+    {"DistrictID": "CKM", "DistrictName": "Chikkamagaluru",     "StateID": 29, "Active": 1},
+    {"DistrictID": "HAS", "DistrictName": "Hassan",             "StateID": 29, "Active": 1},
+    {"DistrictID": "MDY", "DistrictName": "Mandya",             "StateID": 29, "Active": 1},
+    {"DistrictID": "CHN", "DistrictName": "Chamarajanagar",     "StateID": 29, "Active": 1},
+    {"DistrictID": "KOD", "DistrictName": "Kodagu",             "StateID": 29, "Active": 1},
+    {"DistrictID": "DKS", "DistrictName": "Dakshina Kannada",   "StateID": 29, "Active": 1},
+    {"DistrictID": "UDU", "DistrictName": "Udupi",              "StateID": 29, "Active": 1},
+    {"DistrictID": "UKN", "DistrictName": "Uttara Kannada",     "StateID": 29, "Active": 1},
+    {"DistrictID": "GDA", "DistrictName": "Gadag",              "StateID": 29, "Active": 1},
+    {"DistrictID": "DHR", "DistrictName": "Dharwad",            "StateID": 29, "Active": 1},
+    {"DistrictID": "BPR", "DistrictName": "Bagalkot",           "StateID": 29, "Active": 1},
+    {"DistrictID": "VJP", "DistrictName": "Vijayapura",         "StateID": 29, "Active": 1},
+    {"DistrictID": "BDR", "DistrictName": "Bidar",              "StateID": 29, "Active": 1},
+    {"DistrictID": "YDG", "DistrictName": "Yadgir",             "StateID": 29, "Active": 1},
+    {"DistrictID": "RCH", "DistrictName": "Raichur",            "StateID": 29, "Active": 1},
+    {"DistrictID": "KPN", "DistrictName": "Koppal",             "StateID": 29, "Active": 1},
+    {"DistrictID": "BGT", "DistrictName": "Ballari",            "StateID": 29, "Active": 1},
+    {"DistrictID": "CHD", "DistrictName": "Chitradurga",        "StateID": 29, "Active": 1},
+    {"DistrictID": "TDV", "DistrictName": "Tumkur Division",    "StateID": 29, "Active": 1},
+    {"DistrictID": "MYD", "DistrictName": "Mysuru Division",    "StateID": 29, "Active": 1},
+    {"DistrictID": "RNG", "DistrictName": "Ramnagara",          "StateID": 29, "Active": 1},
+    {"DistrictID": "CLG", "DistrictName": "Chikkamagalur",      "StateID": 29, "Active": 1},
+    {"DistrictID": "BNP", "DistrictName": "Bidar North Patrol", "StateID": 29, "Active": 1},
+    {"DistrictID": "VDG", "DistrictName": "Vijaypura Division", "StateID": 29, "Active": 1},
+    {"DistrictID": "BMR", "DistrictName": "Bengaluru Metropolitan Range", "StateID": 29, "Active": 1},
 ]
 
+# ── Acts ──────────────────────────────────────────────────────────────────────
+# Per ER diagram: Act.ActCode (PK), ActDescription, ShortName, Active
 ACTS = [
-    {"ActID": 1, "ActName": "Indian Penal Code", "ActCode": "IPC", "Year": 1860},
-    {"ActID": 2, "ActName": "Bharatiya Nyaya Sanhita", "ActCode": "BNS", "Year": 2023},
-    {"ActID": 3, "ActName": "Narcotic Drugs and Psychotropic Substances Act", "ActCode": "NDPS", "Year": 1985},
-    {"ActID": 4, "ActName": "Karnataka Prohibition Act", "ActCode": "KPA", "Year": 1961},
-    {"ActID": 5, "ActName": "Information Technology Act", "ActCode": "IT", "Year": 2000},
-    {"ActID": 6, "ActName": "Protection of Children from Sexual Offences Act", "ActCode": "POCSO", "Year": 2012},
-    {"ActID": 7, "ActName": "Prevention of Corruption Act", "ActCode": "PCA", "Year": 1988},
-    {"ActID": 8, "ActName": "Arms Act", "ActCode": "ARMS", "Year": 1959},
-    {"ActID": 9, "ActName": "Scheduled Castes and Tribes Act", "ActCode": "SCST", "Year": 1989},
-    {"ActID": 10, "ActName": "Motor Vehicles Act", "ActCode": "MVA", "Year": 1988},
+    {"ActCode": "IPC",   "ActDescription": "Indian Penal Code",                                    "ShortName": "IPC",   "Active": 1},
+    {"ActCode": "BNS",   "ActDescription": "Bharatiya Nyaya Sanhita",                              "ShortName": "BNS",   "Active": 1},
+    {"ActCode": "NDPS",  "ActDescription": "Narcotic Drugs and Psychotropic Substances Act",       "ShortName": "NDPS",  "Active": 1},
+    {"ActCode": "KPA",   "ActDescription": "Karnataka Prohibition Act",                            "ShortName": "KPA",   "Active": 1},
+    {"ActCode": "IT",    "ActDescription": "Information Technology Act",                           "ShortName": "IT",    "Active": 1},
+    {"ActCode": "POCSO", "ActDescription": "Protection of Children from Sexual Offences Act",      "ShortName": "POCSO", "Active": 1},
+    {"ActCode": "PCA",   "ActDescription": "Prevention of Corruption Act",                         "ShortName": "PCA",   "Active": 1},
+    {"ActCode": "ARMS",  "ActDescription": "Arms Act",                                             "ShortName": "ARMS",  "Active": 1},
+    {"ActCode": "SCST",  "ActDescription": "Scheduled Castes and Tribes Act",                      "ShortName": "SCST",  "Active": 1},
+    {"ActCode": "MVA",   "ActDescription": "Motor Vehicles Act",                                   "ShortName": "MVA",   "Active": 1},
 ]
 
+# ── Sections ──────────────────────────────────────────────────────────────────
+# Per ER diagram: Section.ActCode (FK), SectionCode, SectionDescription, Active
 SECTIONS = [
-    {"SectionID": 1, "ActID": 1, "SectionNo": "302", "Description": "Punishment for murder", "MaxPunishment": "Death / Life"},
-    {"SectionID": 2, "ActID": 1, "SectionNo": "376", "Description": "Punishment for rape", "MaxPunishment": "Rigorous imprisonment not less than 10 years"},
-    {"SectionID": 3, "ActID": 1, "SectionNo": "379", "Description": "Punishment for theft", "MaxPunishment": "3 years"},
-    {"SectionID": 4, "ActID": 1, "SectionNo": "392", "Description": "Punishment for robbery", "MaxPunishment": "10 years"},
-    {"SectionID": 5, "ActID": 1, "SectionNo": "420", "Description": "Cheating and dishonestly inducing delivery of property", "MaxPunishment": "7 years"},
-    {"SectionID": 6, "ActID": 1, "SectionNo": "498A", "Description": "Cruelty by husband or his relatives", "MaxPunishment": "3 years"},
-    {"SectionID": 7, "ActID": 1, "SectionNo": "304", "Description": "Culpable homicide not amounting to murder", "MaxPunishment": "10 years / Life"},
-    {"SectionID": 8, "ActID": 1, "SectionNo": "307", "Description": "Attempt to murder", "MaxPunishment": "10 years / Life"},
-    {"SectionID": 9, "ActID": 1, "SectionNo": "395", "Description": "Dacoity", "MaxPunishment": "10 years"},
-    {"SectionID": 10, "ActID": 1, "SectionNo": "323", "Description": "Punishment for voluntarily causing hurt", "MaxPunishment": "1 year"},
-    {"SectionID": 11, "ActID": 1, "SectionNo": "324", "Description": "Voluntarily causing hurt by dangerous weapons", "MaxPunishment": "3 years"},
-    {"SectionID": 12, "ActID": 1, "SectionNo": "354", "Description": "Assault or criminal force to woman with intent to outrage her modesty", "MaxPunishment": "2 years"},
-    {"SectionID": 13, "ActID": 1, "SectionNo": "406", "Description": "Punishment for criminal breach of trust", "MaxPunishment": "3 years"},
-    {"SectionID": 14, "ActID": 1, "SectionNo": "409", "Description": "Criminal breach of trust by public servant", "MaxPunishment": "10 years / Life"},
-    {"SectionID": 15, "ActID": 2, "SectionNo": "103", "Description": "Murder (BNS equivalent of IPC 302)", "MaxPunishment": "Death / Life"},
-    {"SectionID": 16, "ActID": 3, "SectionNo": "20", "Description": "Production, manufacture, possession of narcotic drugs", "MaxPunishment": "Rigorous imprisonment 10-20 years"},
-    {"SectionID": 17, "ActID": 5, "SectionNo": "66C", "Description": "Identity theft", "MaxPunishment": "3 years"},
-    {"SectionID": 18, "ActID": 5, "SectionNo": "66D", "Description": "Cheating by personation using computer", "MaxPunishment": "3 years"},
-    {"SectionID": 19, "ActID": 1, "SectionNo": "363", "Description": "Punishment for kidnapping", "MaxPunishment": "7 years"},
-    {"SectionID": 20, "ActID": 1, "SectionNo": "366", "Description": "Kidnapping/abducting or inducing woman to compel her marriage", "MaxPunishment": "10 years"},
+    {"ActCode": "IPC", "SectionCode": "302",  "SectionDescription": "Punishment for murder",                                          "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "376",  "SectionDescription": "Punishment for rape",                                            "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "379",  "SectionDescription": "Punishment for theft",                                           "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "392",  "SectionDescription": "Punishment for robbery",                                         "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "420",  "SectionDescription": "Cheating and dishonestly inducing delivery of property",         "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "498A", "SectionDescription": "Cruelty by husband or his relatives",                            "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "304",  "SectionDescription": "Culpable homicide not amounting to murder",                      "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "307",  "SectionDescription": "Attempt to murder",                                              "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "395",  "SectionDescription": "Dacoity",                                                        "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "323",  "SectionDescription": "Punishment for voluntarily causing hurt",                        "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "324",  "SectionDescription": "Voluntarily causing hurt by dangerous weapons",                  "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "354",  "SectionDescription": "Assault or criminal force to woman with intent to outrage her modesty", "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "406",  "SectionDescription": "Punishment for criminal breach of trust",                        "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "409",  "SectionDescription": "Criminal breach of trust by public servant",                     "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "363",  "SectionDescription": "Punishment for kidnapping",                                      "Active": 1},
+    {"ActCode": "IPC", "SectionCode": "366",  "SectionDescription": "Kidnapping/abducting or inducing woman to compel her marriage",  "Active": 1},
+    {"ActCode": "BNS", "SectionCode": "103",  "SectionDescription": "Murder (BNS equivalent of IPC 302)",                             "Active": 1},
+    {"ActCode": "NDPS","SectionCode": "20",   "SectionDescription": "Production, manufacture, possession of narcotic drugs",          "Active": 1},
+    {"ActCode": "IT",  "SectionCode": "66C",  "SectionDescription": "Identity theft",                                                 "Active": 1},
+    {"ActCode": "IT",  "SectionCode": "66D",  "SectionDescription": "Cheating by personation using computer",                         "Active": 1},
 ]
 
+# ── CrimeHead ─────────────────────────────────────────────────────────────────
+# Per ER diagram: CrimeHeadID (PK), CrimeGroupName, Active
 CRIME_HEADS = [
-    {"CrimeHeadID": 1, "HeadName": "Crimes Against Body"},
-    {"CrimeHeadID": 2, "HeadName": "Crimes Against Property"},
-    {"CrimeHeadID": 3, "HeadName": "Crimes Against Women"},
-    {"CrimeHeadID": 4, "HeadName": "Crimes Against Children"},
-    {"CrimeHeadID": 5, "HeadName": "Cyber Crimes"},
-    {"CrimeHeadID": 6, "HeadName": "Drug Offences"},
-    {"CrimeHeadID": 7, "HeadName": "Economic Crimes"},
-    {"CrimeHeadID": 8, "HeadName": "Communal Offences"},
+    {"CrimeHeadID": 1, "CrimeGroupName": "Crimes Against Body",     "Active": 1},
+    {"CrimeHeadID": 2, "CrimeGroupName": "Crimes Against Property", "Active": 1},
+    {"CrimeHeadID": 3, "CrimeGroupName": "Crimes Against Women",    "Active": 1},
+    {"CrimeHeadID": 4, "CrimeGroupName": "Crimes Against Children", "Active": 1},
+    {"CrimeHeadID": 5, "CrimeGroupName": "Cyber Crimes",            "Active": 1},
+    {"CrimeHeadID": 6, "CrimeGroupName": "Drug Offences",           "Active": 1},
+    {"CrimeHeadID": 7, "CrimeGroupName": "Economic Crimes",         "Active": 1},
+    {"CrimeHeadID": 8, "CrimeGroupName": "Communal Offences",       "Active": 1},
 ]
 
+# ── CrimeSubHead ──────────────────────────────────────────────────────────────
+# Per ER diagram: CrimeSubHeadID (PK), CrimeHeadID (FK), CrimeHeadName, SeqID, Active
 CRIME_SUB_HEADS = [
-    {"CrimeSubHeadID": 1, "CrimeHeadID": 1, "SubHeadName": "Murder", "GravityOffenceID": 1},
-    {"CrimeSubHeadID": 2, "CrimeHeadID": 1, "SubHeadName": "Culpable Homicide", "GravityOffenceID": 1},
-    {"CrimeSubHeadID": 3, "CrimeHeadID": 1, "SubHeadName": "Attempt to Murder", "GravityOffenceID": 1},
-    {"CrimeSubHeadID": 4, "CrimeHeadID": 1, "SubHeadName": "Assault / Hurt", "GravityOffenceID": 2},
-    {"CrimeSubHeadID": 5, "CrimeHeadID": 2, "SubHeadName": "Theft", "GravityOffenceID": 3},
-    {"CrimeSubHeadID": 6, "CrimeHeadID": 2, "SubHeadName": "Robbery", "GravityOffenceID": 2},
-    {"CrimeSubHeadID": 7, "CrimeHeadID": 2, "SubHeadName": "Dacoity", "GravityOffenceID": 1},
-    {"CrimeSubHeadID": 8, "CrimeHeadID": 2, "SubHeadName": "Burglary", "GravityOffenceID": 2},
-    {"CrimeSubHeadID": 9, "CrimeHeadID": 2, "SubHeadName": "Vehicle Theft", "GravityOffenceID": 3},
-    {"CrimeSubHeadID": 10, "CrimeHeadID": 3, "SubHeadName": "Rape", "GravityOffenceID": 1},
-    {"CrimeSubHeadID": 11, "CrimeHeadID": 3, "SubHeadName": "Molestation", "GravityOffenceID": 2},
-    {"CrimeSubHeadID": 12, "CrimeHeadID": 3, "SubHeadName": "Cruelty by Husband", "GravityOffenceID": 2},
-    {"CrimeSubHeadID": 13, "CrimeHeadID": 3, "SubHeadName": "Kidnapping of Women", "GravityOffenceID": 2},
-    {"CrimeSubHeadID": 14, "CrimeHeadID": 4, "SubHeadName": "Child Abuse (POCSO)", "GravityOffenceID": 1},
-    {"CrimeSubHeadID": 15, "CrimeHeadID": 4, "SubHeadName": "Kidnapping of Child", "GravityOffenceID": 1},
-    {"CrimeSubHeadID": 16, "CrimeHeadID": 5, "SubHeadName": "Cyber Fraud", "GravityOffenceID": 2},
-    {"CrimeSubHeadID": 17, "CrimeHeadID": 5, "SubHeadName": "Identity Theft", "GravityOffenceID": 2},
-    {"CrimeSubHeadID": 18, "CrimeHeadID": 5, "SubHeadName": "Online Harassment", "GravityOffenceID": 3},
-    {"CrimeSubHeadID": 19, "CrimeHeadID": 6, "SubHeadName": "Drug Possession", "GravityOffenceID": 2},
-    {"CrimeSubHeadID": 20, "CrimeHeadID": 6, "SubHeadName": "Drug Trafficking", "GravityOffenceID": 1},
-    {"CrimeSubHeadID": 21, "CrimeHeadID": 7, "SubHeadName": "Cheating / Fraud", "GravityOffenceID": 2},
-    {"CrimeSubHeadID": 22, "CrimeHeadID": 7, "SubHeadName": "Criminal Breach of Trust", "GravityOffenceID": 2},
-    {"CrimeSubHeadID": 23, "CrimeHeadID": 8, "SubHeadName": "Communal Violence", "GravityOffenceID": 1},
+    {"CrimeSubHeadID": 1,  "CrimeHeadID": 1, "CrimeHeadName": "Murder",              "SeqID": 1,  "Active": 1},
+    {"CrimeSubHeadID": 2,  "CrimeHeadID": 1, "CrimeHeadName": "Culpable Homicide",   "SeqID": 2,  "Active": 1},
+    {"CrimeSubHeadID": 3,  "CrimeHeadID": 1, "CrimeHeadName": "Attempt to Murder",   "SeqID": 3,  "Active": 1},
+    {"CrimeSubHeadID": 4,  "CrimeHeadID": 1, "CrimeHeadName": "Assault / Hurt",      "SeqID": 4,  "Active": 1},
+    {"CrimeSubHeadID": 5,  "CrimeHeadID": 2, "CrimeHeadName": "Theft",               "SeqID": 1,  "Active": 1},
+    {"CrimeSubHeadID": 6,  "CrimeHeadID": 2, "CrimeHeadName": "Robbery",             "SeqID": 2,  "Active": 1},
+    {"CrimeSubHeadID": 7,  "CrimeHeadID": 2, "CrimeHeadName": "Dacoity",             "SeqID": 3,  "Active": 1},
+    {"CrimeSubHeadID": 8,  "CrimeHeadID": 2, "CrimeHeadName": "Burglary",            "SeqID": 4,  "Active": 1},
+    {"CrimeSubHeadID": 9,  "CrimeHeadID": 2, "CrimeHeadName": "Vehicle Theft",       "SeqID": 5,  "Active": 1},
+    {"CrimeSubHeadID": 10, "CrimeHeadID": 3, "CrimeHeadName": "Rape",                "SeqID": 1,  "Active": 1},
+    {"CrimeSubHeadID": 11, "CrimeHeadID": 3, "CrimeHeadName": "Molestation",         "SeqID": 2,  "Active": 1},
+    {"CrimeSubHeadID": 12, "CrimeHeadID": 3, "CrimeHeadName": "Cruelty by Husband",  "SeqID": 3,  "Active": 1},
+    {"CrimeSubHeadID": 13, "CrimeHeadID": 3, "CrimeHeadName": "Kidnapping of Women", "SeqID": 4,  "Active": 1},
+    {"CrimeSubHeadID": 14, "CrimeHeadID": 4, "CrimeHeadName": "Child Abuse (POCSO)", "SeqID": 1,  "Active": 1},
+    {"CrimeSubHeadID": 15, "CrimeHeadID": 4, "CrimeHeadName": "Kidnapping of Child", "SeqID": 2,  "Active": 1},
+    {"CrimeSubHeadID": 16, "CrimeHeadID": 5, "CrimeHeadName": "Cyber Fraud",         "SeqID": 1,  "Active": 1},
+    {"CrimeSubHeadID": 17, "CrimeHeadID": 5, "CrimeHeadName": "Identity Theft",      "SeqID": 2,  "Active": 1},
+    {"CrimeSubHeadID": 18, "CrimeHeadID": 5, "CrimeHeadName": "Online Harassment",   "SeqID": 3,  "Active": 1},
+    {"CrimeSubHeadID": 19, "CrimeHeadID": 6, "CrimeHeadName": "Drug Possession",     "SeqID": 1,  "Active": 1},
+    {"CrimeSubHeadID": 20, "CrimeHeadID": 6, "CrimeHeadName": "Drug Trafficking",    "SeqID": 2,  "Active": 1},
+    {"CrimeSubHeadID": 21, "CrimeHeadID": 7, "CrimeHeadName": "Cheating / Fraud",    "SeqID": 1,  "Active": 1},
+    {"CrimeSubHeadID": 22, "CrimeHeadID": 7, "CrimeHeadName": "Criminal Breach of Trust", "SeqID": 2, "Active": 1},
+    {"CrimeSubHeadID": 23, "CrimeHeadID": 8, "CrimeHeadName": "Communal Violence",   "SeqID": 1,  "Active": 1},
 ]
 
-RANKS = [
-    {"RankID": 1, "RankName": "Director General of Police", "RankCode": "DGP"},
-    {"RankID": 2, "RankName": "Additional Director General", "RankCode": "ADGP"},
-    {"RankID": 3, "RankName": "Inspector General", "RankCode": "IG"},
-    {"RankID": 4, "RankName": "Deputy Inspector General", "RankCode": "DIG"},
-    {"RankID": 5, "RankName": "Superintendent of Police", "RankCode": "SP"},
-    {"RankID": 6, "RankName": "Additional SP", "RankCode": "ASP"},
-    {"RankID": 7, "RankName": "Deputy SP", "RankCode": "DSP"},
-    {"RankID": 8, "RankName": "Circle Inspector", "RankCode": "CI"},
-    {"RankID": 9, "RankName": "Sub-Inspector", "RankCode": "SI"},
-    {"RankID": 10, "RankName": "Assistant Sub-Inspector", "RankCode": "ASI"},
-    {"RankID": 11, "RankName": "Head Constable", "RankCode": "HC"},
-    {"RankID": 12, "RankName": "Police Constable", "RankCode": "PC"},
-]
-
+# ── GravityOffence ────────────────────────────────────────────────────────────
+# Per ER diagram: GravityOffenceID (PK), LookupValue, Active
 GRAVITY_OFFENCES = [
-    {"GravityOffenceID": 1, "Description": "Heinous Offence", "Priority": "CRITICAL"},
-    {"GravityOffenceID": 2, "Description": "Serious Offence", "Priority": "HIGH"},
-    {"GravityOffenceID": 3, "Description": "Other Cognizable Offence", "Priority": "MEDIUM"},
-    {"GravityOffenceID": 4, "Description": "Non-Cognizable Offence", "Priority": "LOW"},
+    {"GravityOffenceID": 1, "LookupValue": "Heinous Offence",            "Active": 1},
+    {"GravityOffenceID": 2, "LookupValue": "Serious Offence",            "Active": 1},
+    {"GravityOffenceID": 3, "LookupValue": "Other Cognizable Offence",   "Active": 1},
+    {"GravityOffenceID": 4, "LookupValue": "Non-Cognizable Offence",     "Active": 1},
+]
+
+# ── CaseCategory ──────────────────────────────────────────────────────────────
+# Per ER diagram: CaseCategoryID (PK), LookupValue
+# CrimeNo first digit codes: 1=FIR, 3=UDR, 4=PAR, 8=Zero FIR
+CASE_CATEGORIES = [
+    {"CaseCategoryID": 1, "LookupValue": "FIR"},
+    {"CaseCategoryID": 3, "LookupValue": "UDR"},
+    {"CaseCategoryID": 4, "LookupValue": "PAR"},
+    {"CaseCategoryID": 8, "LookupValue": "Zero FIR"},
+]
+
+# ── CaseStatusMaster ──────────────────────────────────────────────────────────
+# Per ER diagram: CaseStatusID (PK), CaseStatusName
+CASE_STATUS_MASTER = [
+    {"CaseStatusID": 1, "CaseStatusName": "Under Investigation"},
+    {"CaseStatusID": 2, "CaseStatusName": "Charge Sheeted"},
+    {"CaseStatusID": 3, "CaseStatusName": "Final Report Filed"},
+    {"CaseStatusID": 4, "CaseStatusName": "Closed"},
+    {"CaseStatusID": 5, "CaseStatusName": "Pending Trial"},
+    {"CaseStatusID": 6, "CaseStatusName": "Convicted"},
+    {"CaseStatusID": 7, "CaseStatusName": "Acquitted"},
+]
+
+# ── OccupationMaster ──────────────────────────────────────────────────────────
+# Per ER diagram: OccupationID (PK), OccupationName
+OCCUPATION_MASTER = [
+    {"OccupationID": 1,  "OccupationName": "Farmer"},
+    {"OccupationID": 2,  "OccupationName": "Government Employee"},
+    {"OccupationID": 3,  "OccupationName": "Private Employee"},
+    {"OccupationID": 4,  "OccupationName": "Businessman"},
+    {"OccupationID": 5,  "OccupationName": "Student"},
+    {"OccupationID": 6,  "OccupationName": "Labourer"},
+    {"OccupationID": 7,  "OccupationName": "Driver"},
+    {"OccupationID": 8,  "OccupationName": "Shopkeeper"},
+    {"OccupationID": 9,  "OccupationName": "Homemaker"},
+    {"OccupationID": 10, "OccupationName": "Unemployed"},
+    {"OccupationID": 11, "OccupationName": "Self-Employed"},
+    {"OccupationID": 12, "OccupationName": "Retired"},
+]
+
+# ── ReligionMaster ────────────────────────────────────────────────────────────
+# Per ER diagram: ReligionID (PK), ReligionName
+RELIGION_MASTER = [
+    {"ReligionID": 1, "ReligionName": "Hindu"},
+    {"ReligionID": 2, "ReligionName": "Muslim"},
+    {"ReligionID": 3, "ReligionName": "Christian"},
+    {"ReligionID": 4, "ReligionName": "Jain"},
+    {"ReligionID": 5, "ReligionName": "Buddhist"},
+    {"ReligionID": 6, "ReligionName": "Sikh"},
+    {"ReligionID": 7, "ReligionName": "Other"},
+]
+
+# ── CasteMaster ───────────────────────────────────────────────────────────────
+# Per ER diagram: caste_master_id (PK), caste_master_name
+CASTE_MASTER = [
+    {"caste_master_id": 1,  "caste_master_name": "General"},
+    {"caste_master_id": 2,  "caste_master_name": "OBC"},
+    {"caste_master_id": 3,  "caste_master_name": "SC"},
+    {"caste_master_id": 4,  "caste_master_name": "ST"},
+    {"caste_master_id": 5,  "caste_master_name": "Minority"},
+    {"caste_master_id": 6,  "caste_master_name": "Other"},
+]
+
+# ── Ranks ─────────────────────────────────────────────────────────────────────
+# Per ER diagram: RankID (PK), RankName, Hierarchy, Active
+RANKS = [
+    {"RankID": 1,  "RankName": "Director General of Police",  "Hierarchy": 1,  "Active": 1},
+    {"RankID": 2,  "RankName": "Additional Director General", "Hierarchy": 2,  "Active": 1},
+    {"RankID": 3,  "RankName": "Inspector General",           "Hierarchy": 3,  "Active": 1},
+    {"RankID": 4,  "RankName": "Deputy Inspector General",    "Hierarchy": 4,  "Active": 1},
+    {"RankID": 5,  "RankName": "Superintendent of Police",    "Hierarchy": 5,  "Active": 1},
+    {"RankID": 6,  "RankName": "Additional SP",               "Hierarchy": 6,  "Active": 1},
+    {"RankID": 7,  "RankName": "Deputy SP",                   "Hierarchy": 7,  "Active": 1},
+    {"RankID": 8,  "RankName": "Circle Inspector",            "Hierarchy": 8,  "Active": 1},
+    {"RankID": 9,  "RankName": "Sub-Inspector",               "Hierarchy": 9,  "Active": 1},
+    {"RankID": 10, "RankName": "Assistant Sub-Inspector",     "Hierarchy": 10, "Active": 1},
+    {"RankID": 11, "RankName": "Head Constable",              "Hierarchy": 11, "Active": 1},
+    {"RankID": 12, "RankName": "Police Constable",            "Hierarchy": 12, "Active": 1},
 ]
 
 
@@ -179,14 +255,19 @@ def seed_table(table_name, rows):
 
 def main():
     logger.info("=== KAVERI Reference Data Seed ===")
-    seed_table("State", STATES)
-    seed_table("District", DISTRICTS)
-    seed_table("Act", ACTS)
-    seed_table("Section", SECTIONS)
-    seed_table("CrimeHead", CRIME_HEADS)
-    seed_table("CrimeSubHead", CRIME_SUB_HEADS)
-    seed_table("Rank", RANKS)
-    seed_table("GravityOffence", GRAVITY_OFFENCES)
+    seed_table("State",            STATES)
+    seed_table("District",         DISTRICTS)
+    seed_table("Act",              ACTS)
+    seed_table("Section",          SECTIONS)
+    seed_table("CrimeHead",        CRIME_HEADS)
+    seed_table("CrimeSubHead",     CRIME_SUB_HEADS)
+    seed_table("GravityOffence",   GRAVITY_OFFENCES)
+    seed_table("CaseCategory",     CASE_CATEGORIES)
+    seed_table("CaseStatusMaster", CASE_STATUS_MASTER)
+    seed_table("OccupationMaster", OCCUPATION_MASTER)
+    seed_table("ReligionMaster",   RELIGION_MASTER)
+    seed_table("CasteMaster",      CASTE_MASTER)
+    seed_table("Rank",             RANKS)
     logger.info("=== Reference data seeding complete ===")
 
 
