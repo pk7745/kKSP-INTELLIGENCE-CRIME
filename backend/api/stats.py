@@ -128,21 +128,22 @@ async def get_district_stats(district_id: str):
         total = total_result.get("data", [{}])[0].get("Total", 0)
 
         crimes_result = datastore.execute_query(
-            f"SELECT CrimeSubHeadID, COUNT(ROWID) as Count FROM CaseMaster "
-            f"WHERE DistrictID = '{district_id}' GROUP BY CrimeSubHeadID "
+            f"SELECT CrimeMinorHeadID, COUNT(ROWID) as Count FROM CaseMaster "
+            f"WHERE DistrictID = '{district_id}' GROUP BY CrimeMinorHeadID "
             f"ORDER BY Count DESC LIMIT 5"
         )
         top_crimes = [
-            {"type": r["CrimeSubHeadID"], "count": r["Count"]}
+            {"type": r["CrimeMinorHeadID"], "count": r["Count"]}
             for r in crimes_result.get("data", [])
         ]
 
+        # ChargesheetDetails.cstype per ER diagram: A=Chargesheet, B=False Case, C=Undetected
         chargesheet_result = datastore.execute_query(
-            f"SELECT cd.ChargesheetStatus, COUNT(cd.ROWID) as Count "
+            f"SELECT cd.cstype, COUNT(cd.ROWID) as Count "
             f"FROM ChargesheetDetails cd JOIN CaseMaster c ON cd.CaseMasterID = c.ROWID "
-            f"WHERE c.DistrictID = '{district_id}' GROUP BY cd.ChargesheetStatus"
+            f"WHERE c.DistrictID = '{district_id}' GROUP BY cd.cstype"
         )
-        cs_data = {r["ChargesheetStatus"]: r["Count"] for r in chargesheet_result.get("data", [])}
+        cs_data = {r["cstype"]: r["Count"] for r in chargesheet_result.get("data", [])}
 
         return {
             "DistrictID": district_id,

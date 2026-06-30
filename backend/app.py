@@ -1,6 +1,8 @@
 """
-KAVERI backend entry point — FastAPI + WebSocket via uvicorn/Starlette.
-Runs on PORT (default 9000).  WebSocket at /ws, REST at /api/*, webhook at /webhook/*.
+KAVERI backend entry point — Tornado (outer server) + FastAPI (REST).
+Tornado is required for Catalyst AppSail WebSocket support.
+WebSocket at /ws, REST at /api/*, webhook at /webhook/*.
+Runs on PORT (default 9000).
 """
 import os
 import asyncio
@@ -8,9 +10,16 @@ import json
 import logging
 from typing import Set
 
+# ── FastAPI (REST + internal ASGI) ────────────────────────────────────────────
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+
+# ── Tornado (outer HTTP/WebSocket server for Catalyst AppSail) ────────────────
+import tornado.web
+import tornado.ioloop
+import tornado.websocket
+import tornado.httpserver
+from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("kaveri")
@@ -19,14 +28,17 @@ logger = logging.getLogger("kaveri")
 # ── Global WebSocket manager (imported by other modules) ──────────────────────
 class WebSocketManager:
     def __init__(self):
-        self.connections: Set[WebSocket] = set()
+        self.connections: Set = set()     # holds both FastAPI WS + Tornado WS clients
 
-    async def connect(self, ws: WebSocket):
+    async def connect_fastapi(self, ws: WebSocket):
         await ws.accept()
         self.connections.add(ws)
-        logger.info(f"WS connected. Total: {len(self.connections)}")
+        logger.info(f"FastAPI WS connected. Total: {len(self.connections)}")
 
-    def disconnect(self, ws: WebSocket):
+    def add_tornado(self, handler):
+        self.connections.add(handler)
+
+    def disconnect(self, ws):
         self.connections.discard(ws)
 
     async def broadcast(self, message: dict):
@@ -34,7 +46,12 @@ class WebSocketManager:
         text = json.dumps(message, default=str)
         for ws in list(self.connections):
             try:
-                await ws.send_text(text)
+                # FastAPI WebSocket
+                if hasattr(ws, "send_text"):
+                    await ws.send_text(text)
+                # Tornado WebSocketHandler
+                elif hasattr(ws, "write_message"):
+                    ws.write_message(text)
             except Exception:
                 dead.add(ws)
         self.connections -= dead
@@ -96,9 +113,10 @@ async def health():
     }
 
 
+# ── FastAPI native WebSocket (local dev / non-Catalyst environments) ──────────
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    await ws_manager.connect(websocket)
+    await ws_manager.connect_fastapi(websocket)
     try:
         await websocket.send_text(json.dumps({
             "type": "connected",
@@ -114,10 +132,125 @@ async def websocket_endpoint(websocket: WebSocket):
                 pass
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket)
-        logger.info(f"WS disconnected. Total: {len(ws_manager.connections)}")
+        logger.info(f"FastAPI WS disconnected. Total: {len(ws_manager.connections)}")
+
+
+# ── Tornado WebSocket handler (Catalyst AppSail production) ───────────────────
+class TornadoWSHandler(tornado.websocket.WebSocketHandler):
+    """Native Tornado WebSocket handler required for Catalyst AppSail."""
+
+    def check_origin(self, origin):
+        return True  # Allow all origins (CORS handled separately)
+
+    def open(self):
+        ws_manager.add_tornado(self)
+        logger.info(f"Tornado WS connected. Total: {len(ws_manager.connections)}")
+        self.write_message(json.dumps({
+            "type": "connected",
+            "message": "KAVERI WebSocket ready (Tornado)",
+        }))
+
+    def on_message(self, message):
+        try:
+            msg = json.loads(message)
+            if msg.get("type") == "ping":
+                self.write_message(json.dumps({"type": "pong"}))
+        except Exception:
+            pass
+
+    def on_close(self):
+        ws_manager.disconnect(self)
+        logger.info(f"Tornado WS disconnected. Total: {len(ws_manager.connections)}")
+
+
+# ── Tornado ASGI proxy — bridges FastAPI into Tornado's HTTP server ───────────
+class TornadoFastAPIHandler(tornado.web.RequestHandler):
+    """
+    Proxy all non-WebSocket requests from Tornado's HTTP server to FastAPI's ASGI app.
+    This allows Tornado to be the single outer server (required for Catalyst AppSail)
+    while FastAPI handles all REST logic.
+    """
+    SUPPORTED_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
+
+    async def prepare(self):
+        self._body = self.request.body
+
+    async def _handle(self):
+        import uvicorn.lifespan.off
+        from io import BytesIO
+
+        scope = {
+            "type":         "http",
+            "asgi":         {"version": "3.0"},
+            "http_version": "1.1",
+            "method":       self.request.method,
+            "headers":      [
+                (k.lower().encode(), v.encode())
+                for k, v in self.request.headers.items()
+            ],
+            "path":         self.request.path,
+            "query_string": self.request.query.encode() if self.request.query else b"",
+            "root_path":    "",
+        }
+
+        body = self._body
+        body_sent = False
+
+        async def receive():
+            nonlocal body_sent
+            if not body_sent:
+                body_sent = True
+                return {"type": "http.request", "body": body, "more_body": False}
+            return {"type": "http.disconnect"}
+
+        response_started = False
+        response_body = BytesIO()
+
+        async def send(event):
+            nonlocal response_started
+            if event["type"] == "http.response.start":
+                self.set_status(event["status"])
+                for name, value in event.get("headers", []):
+                    self.set_header(name.decode(), value.decode())
+                response_started = True
+            elif event["type"] == "http.response.body":
+                chunk = event.get("body", b"")
+                if chunk:
+                    response_body.write(chunk)
+                if not event.get("more_body", False):
+                    self.write(response_body.getvalue())
+                    self.finish()
+
+        await app(scope, receive, send)
+
+    async def get(self):     await self._handle()
+    async def post(self):    await self._handle()
+    async def put(self):     await self._handle()
+    async def patch(self):   await self._handle()
+    async def delete(self):  await self._handle()
+    async def options(self): await self._handle()
+    async def head(self):    await self._handle()
+
+
+def make_tornado_app():
+    return tornado.web.Application([
+        (r"/ws",    TornadoWSHandler),
+        (r"/.*",    TornadoFastAPIHandler),
+    ])
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 9000))
-    logger.info(f"Starting KAVERI on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+    logger.info(f"Starting KAVERI on port {port} (Tornado + FastAPI)")
+
+    # Use asyncio event loop policy compatible with Tornado
+    asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
+
+    tornado_app = make_tornado_app()
+    server = tornado.httpserver.HTTPServer(tornado_app)
+    server.listen(port)
+
+    logger.info(f"Tornado HTTP server listening on port {port}")
+    logger.info("WebSocket: /ws  |  REST: /api/*  |  Webhook: /webhook/*")
+
+    tornado.ioloop.IOLoop.current().start()

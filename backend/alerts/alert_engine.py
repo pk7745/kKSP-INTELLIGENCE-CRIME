@@ -39,21 +39,20 @@ def _get_datastore():
 def _query_recent_firs(
     datastore,
     district_id: str,
-    crime_sub_head_id: str,
+    crime_minor_head_id,
     hours: int,
 ) -> list:
-    """Count recent FIRs by district + crime type in past N hours."""
+    """Count recent FIRs by district + CrimeMinorHeadID in past N hours."""
     since = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
     if datastore is None:
-        # Return mock data for local development
-        return _alert_store  # check against in-memory store
+        return _alert_store
 
     try:
         zcql = (
-            f"SELECT CrimeNo, Latitude, Longitude, CrimeDateTime FROM CaseMaster "
+            f"SELECT CrimeNo, latitude, longitude, IncidentFromDate FROM CaseMaster "
             f"WHERE DistrictID = '{district_id}' "
-            f"AND CrimeSubHeadID = '{crime_sub_head_id}' "
-            f"AND CrimeDateTime >= '{since}'"
+            f"AND CrimeMinorHeadID = {crime_minor_head_id!r} "
+            f"AND IncidentFromDate >= '{since}'"
         )
         result = datastore.execute_query(zcql)
         return result.get("data", [])
@@ -79,10 +78,10 @@ def _query_nearby_firs(
 
     try:
         zcql = (
-            f"SELECT CrimeNo, Latitude, Longitude, CrimeDateTime FROM CaseMaster "
-            f"WHERE Latitude BETWEEN {lat - lat_delta} AND {lat + lat_delta} "
-            f"AND Longitude BETWEEN {lng - lng_delta} AND {lng + lng_delta} "
-            f"AND CrimeDateTime >= '{since}'"
+            f"SELECT CrimeNo, latitude, longitude, IncidentFromDate FROM CaseMaster "
+            f"WHERE latitude BETWEEN {lat - lat_delta} AND {lat + lat_delta} "
+            f"AND longitude BETWEEN {lng - lng_delta} AND {lng + lng_delta} "
+            f"AND IncidentFromDate >= '{since}'"
         )
         result = datastore.execute_query(zcql)
         return result.get("data", [])
@@ -169,10 +168,11 @@ async def check_alerts(fir_data: dict) -> list:
     fired_alerts = []
     datastore = _get_datastore()
 
-    crime_no = fir_data.get("CrimeNo", "UNKNOWN")
-    district_id = fir_data.get("DistrictID", "")
-    crime_sub_head_id = fir_data.get("CrimeSubHeadID", "")
-    gravity_id = fir_data.get("GravityOffenceID")
+    crime_no          = fir_data.get("CrimeNo", "UNKNOWN")
+    district_id       = fir_data.get("DistrictID", "")
+    # Use official ER diagram field names; fall back to legacy CrimeSubHeadID for compat
+    crime_minor_head_id = fir_data.get("CrimeMinorHeadID") or fir_data.get("CrimeSubHeadID", "")
+    gravity_id        = fir_data.get("GravityOffenceID")
     lat = float(fir_data.get("Latitude", 0) or 0)
     lng = float(fir_data.get("Longitude", 0) or 0)
     accused_name = fir_data.get("AccusedName", "")
@@ -205,14 +205,14 @@ async def check_alerts(fir_data: dict) -> list:
 
     # --- Rule 2: CRIME_SPIKE ---
     # 5+ FIRs of same crime type in same district within 8 hours
-    recent_same = _query_recent_firs(datastore, district_id, crime_sub_head_id, hours=8)
+    recent_same = _query_recent_firs(datastore, district_id, crime_minor_head_id, hours=8)
     # +1 to include current FIR
     if len(recent_same) + 1 >= 5:
         alert = {
             "AlertType": "CRIME_SPIKE",
             "Severity": "HIGH",
             "Description": (
-                f"Crime spike detected: {len(recent_same) + 1} FIRs of type {crime_sub_head_id} "
+                f"Crime spike detected: {len(recent_same) + 1} FIRs of CrimeMinorHeadID={crime_minor_head_id} "
                 f"in district {district_id} within the last 8 hours. Latest: {crime_no}."
             ),
             "CrimeNo": crime_no,
@@ -223,7 +223,7 @@ async def check_alerts(fir_data: dict) -> list:
         alert["AlertID"] = alert_id
         fired_alerts.append(alert)
         await _broadcast_alert(alert)
-        logger.info(f"CRIME_SPIKE alert fired for {district_id}/{crime_sub_head_id}")
+        logger.info(f"CRIME_SPIKE alert fired for {district_id}/CrimeMinorHead={crime_minor_head_id}")
 
     # --- Rule 3: CLUSTER_ALERT ---
     # 3+ FIRs within ~2km radius in last 4 hours
@@ -233,11 +233,11 @@ async def check_alerts(fir_data: dict) -> list:
         close_firs = [
             f for f in nearby
             if (
-                f.get("Latitude") is not None
-                and f.get("Longitude") is not None
+                f.get("latitude") is not None
+                and f.get("longitude") is not None
                 and _haversine_km(
                     lat, lng,
-                    float(f["Latitude"]), float(f["Longitude"])
+                    float(f["latitude"]), float(f["longitude"])
                 ) <= 2.0
             )
         ]
